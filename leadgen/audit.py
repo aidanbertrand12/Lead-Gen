@@ -160,7 +160,10 @@ def audit_all(companies: list[Company], workers: int = 16, log=print) -> list[Co
     log(f"Auditing {len(todo)} websites...")
 
     def work(c: Company):
-        c.audit = audit_url(c.website)
+        try:
+            c.audit = audit_url(c.website)
+        except Exception as e:
+            c.audit = {"url": c.website, "reachable": False, "error": f"audit failed: {e}"[:200]}
         return c
 
     with ThreadPoolExecutor(workers) as pool:

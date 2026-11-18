@@ -47,7 +47,7 @@ def candidate_domains(name: str) -> list[str]:
     for s in stems:
         for tld in (".com", ".net", ".us"):
             d = s + tld
-            if len(s) >= 3 and d not in seen:
+            if 3 <= len(s) <= 63 and d not in seen:
                 seen.add(d)
                 out.append(d)
     return out
@@ -57,7 +57,7 @@ def _resolves(domain: str) -> bool:
     try:
         socket.getaddrinfo(domain, 443)
         return True
-    except OSError:
+    except (OSError, UnicodeError):
         return False
 
 
@@ -105,7 +105,11 @@ def discover(companies: list[Company], workers: int = 16, log=print) -> list[Com
     log(f"Discovering websites for {len(todo)} companies (of {len(companies)})...")
 
     def work(c: Company):
-        url = guess_website(c)
+        try:
+            url = guess_website(c)
+        except Exception as e:  # one bad name must not kill a 2,000-company run
+            log(f"  discover error for {c.name!r}: {e}")
+            url = ""
         if url:
             c.website, c.website_source = url, "guess"
         return c
