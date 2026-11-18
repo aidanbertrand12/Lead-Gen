@@ -7,3 +7,4 @@ data/*.csv
 data/*.json
 data/*.html
 !data/seed_example.csv
+outreach/

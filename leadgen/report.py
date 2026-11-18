@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .models import Company
 
-CSV_FIELDS = ["score", "site_confidence", "name", "city", "state", "phone", "website", "website_source",
+CSV_FIELDS = ["score", "site_confidence", "name", "city", "state", "phone", "email", "other_emails", "people", "linkedin", "website", "website_source",
               "copyright_year", "https", "mobile_friendly", "chat_widget", "has_form",
               "analytics", "wordpress_version", "jquery_version", "load_seconds",
               "reasons", "pitch", "related_entities", "address", "zip", "source", "source_id"]
@@ -22,7 +22,12 @@ def write_csv(companies: list[Company], path: Path) -> None:
             a = c.audit
             w.writerow({
                 "score": c.score, "site_confidence": a.get("site_confidence", ""), "name": c.name, "city": c.city, "state": c.state,
-                "phone": c.phone, "website": c.website, "website_source": c.website_source,
+                "phone": c.phone,
+                "email": (a.get("contacts", {}).get("emails") or [""])[0],
+                "other_emails": "; ".join((a.get("contacts", {}).get("emails") or [])[1:]),
+                "people": "; ".join(a.get("contacts", {}).get("people", [])),
+                "linkedin": a.get("contacts", {}).get("linkedin", "") or ("yes" if a.get("has_linkedin") else ""),
+                "website": c.website, "website_source": c.website_source,
                 "copyright_year": a.get("copyright_year") or "", "https": a.get("https", ""),
                 "mobile_friendly": a.get("has_viewport", ""), "chat_widget": a.get("chat_widget", ""),
                 "has_form": a.get("has_form", ""), "analytics": ";".join(a.get("analytics", [])),

@@ -73,6 +73,36 @@ def cmd_rescore(args) -> None:
     print(f"Rescored {len(ranked)} leads.")
 
 
+def cmd_contacts(args) -> None:
+    """Add emails / phones / leadership names to data/leads.json from each lead's own website."""
+    from . import contacts
+    from .models import load_json
+    companies = load_json(DATA / "leads.json")
+    contacts.scrape_all(companies, workers=args.workers)
+    save_json(companies, DATA / "leads.json")
+    report.write_csv(companies, DATA / "leads.csv")
+    report.write_html(companies, DATA / "leads.html")
+
+
+def cmd_outreach(args) -> None:
+    """Build grok_leads.csv, grok_prompt.txt, the setup guide PDF and the lead book PDF."""
+    from . import outreach, pdfs
+    from .models import load_json
+    sender = {"name": args.name, "title": args.title, "phone": args.phone, "address": args.address,
+              "calendar": args.calendar, "daily": args.daily}
+    companies = load_json(DATA / "leads.json")
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    rows = outreach.build_rows(companies)
+    n = outreach.write_grok_csv(rows, out / "grok_leads.csv")
+    outreach.write_prompt(sender, out / "grok_prompt.txt")
+    stats = pdfs.build_lead_book(out / "GCS_Lead_Book.pdf", companies, sender)
+    pdfs.build_setup_guide(out / "GCS_Setup_Guide.pdf", stats, sender)
+    print(f"Wrote {out}/grok_leads.csv ({n} companies with email), grok_prompt.txt, "
+          f"GCS_Lead_Book.pdf, GCS_Setup_Guide.pdf")
+    print(stats)
+
+
 def cmd_audit_url(args) -> None:
     from .models import Company
     c = Company(name=args.url, website=args.url)
@@ -100,6 +130,20 @@ def main() -> None:
 
     rs = sub.add_parser("rescore", help="re-filter and re-score data/leads.json without re-crawling")
     rs.set_defaults(fn=cmd_rescore)
+
+    ct = sub.add_parser("contacts", help="scrape public emails/phones/leaders from lead websites")
+    ct.add_argument("--workers", type=int, default=24)
+    ct.set_defaults(fn=cmd_contacts)
+
+    o = sub.add_parser("outreach", help="build Grok lead file, prompt and printable PDFs")
+    o.add_argument("--name", default="[Your Name]")
+    o.add_argument("--title", default="[Your Title]")
+    o.add_argument("--phone", default="[Your Phone]")
+    o.add_argument("--address", default="[Your Business Mailing Address]")
+    o.add_argument("--calendar", default="[Your Booking Link]")
+    o.add_argument("--daily", type=int, default=10, help="max first emails per Grok run")
+    o.add_argument("--out", default="outreach")
+    o.set_defaults(fn=cmd_outreach)
 
     u = sub.add_parser("audit-url", help="audit a single website")
     u.add_argument("url")
