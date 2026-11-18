@@ -39,6 +39,7 @@ OBSERVATIONS = [
 _FREE_MAIL = {"gmail.com", "yahoo.com", "aol.com", "hotmail.com", "outlook.com", "att.net",
               "sbcglobal.net", "bellsouth.net", "cox.net", "comcast.net", "msn.com", "icloud.com"}
 _EXEC = re.compile(r"president|ceo|chief executive|owner|founder|managing (partner|director|member)|"
+                   r"sole proprietor|manager|member|partner|"
                    r"principal|general manager|coo|chief operating|business development|chairman", re.I)
 _SKIP_TITLE = re.compile(r"human resources|\bhr\b|land\b|regulatory|geolog|geoscience|accounting|"
                          r"controller|reservoir|drilling|completions|it\b|safety|hse", re.I)
@@ -66,7 +67,7 @@ def pick_contact(c: Company) -> tuple[str, str, str, str]:
               if e.split("@")[-1] in site_hosts or e.split("@")[-1] in _FREE_MAIL
               or any(e.split("@")[-1].split(".")[0] in h for h in site_hosts)]
     people = []
-    for p in ct.get("people", []):
+    for p in list(ct.get("people", [])) + list(c.officers):
         name, _, title = p.partition(", ")
         if _EXEC.search(title) and not _SKIP_TITLE.search(title):
             people.append((name, title))

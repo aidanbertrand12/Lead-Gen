@@ -155,15 +155,24 @@ def audit_url(url: str, timeout: float = 15) -> dict:
     return a
 
 
-def audit_all(companies: list[Company], workers: int = 16, log=print) -> list[Company]:
-    todo = [c for c in companies if c.website]
-    log(f"Auditing {len(todo)} websites...")
+def audit_all(companies: list[Company], workers: int = 16, log=print, cache=None) -> list[Company]:
+    todo = []
+    for c in companies:
+        if not c.website:
+            continue
+        if cache is not None and c.website in cache:
+            c.audit = dict(cache.get(c.website))
+            continue
+        todo.append(c)
+    log(f"Auditing {len(todo)} websites (others cached)...")
 
     def work(c: Company):
         try:
             c.audit = audit_url(c.website)
         except Exception as e:
             c.audit = {"url": c.website, "reachable": False, "error": f"audit failed: {e}"[:200]}
+        if cache is not None:
+            cache.put(c.website, c.audit)
         return c
 
     with ThreadPoolExecutor(workers) as pool:

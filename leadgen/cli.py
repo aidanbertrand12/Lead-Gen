@@ -1,7 +1,8 @@
 """Command-line entry point.
 
-  python -m leadgen run                       # BOEM -> discover sites -> audit -> score -> report
-  python -m leadgen run --places              # also pull oilfield service cos. from Google Places
+  python -m leadgen run                       # all sources -> discover sites -> audit -> score -> contacts
+  python -m leadgen run --sources tx_rrc --states TX
+  python -m leadgen run --sources boem,places # Google Places needs GOOGLE_PLACES_API_KEY
   python -m leadgen run --seed my_list.csv    # add your own list (name,city,state,website,phone)
   python -m leadgen run --limit 100           # quick test on the first 100 companies
   python -m leadgen audit-url https://example.com
@@ -14,46 +15,60 @@ from pathlib import Path
 
 from . import audit, discover, report, score
 from .models import load_seed_csv, merge, save_json
-from .sources import boem, places
+from .sources import places
 
 DATA = Path("data")
 
 
-def cmd_run(args) -> None:
+def _fetch_sources(args) -> list:
+    from .sources import REGISTRY
+    states = None if args.states.upper() == "ALL" else {x.strip().upper() for x in args.states.split(",")}
     lists = []
-    states = set(s.strip().upper() for s in args.states.split(","))
-    if not args.no_boem:
-        print("Fetching BOEM Gulf company list...")
-        b = boem.fetch(DATA / "raw", states, skip_paper_entities=not args.keep_holding_cos)
-        print(f"  {len(b)} active BOEM companies in {sorted(states)}")
-        lists.append(b)
-    if args.places:
-        print("Searching Google Places for oilfield service companies...")
-        p = places.fetch(max_pages=args.places_pages)
-        p = [c for c in p if c.state in states]
-        print(f"  {len(p)} Places results")
-        lists.append(p)
+    names = [n.strip() for n in args.sources.split(",") if n.strip()]
+    for name in names:
+        if name == "places":
+            print("Searching Google Places for oilfield service companies...")
+            found = places.fetch(max_pages=args.places_pages)
+        else:
+            print(f"Fetching {name}...")
+            try:
+                found = REGISTRY[name](DATA / "raw")
+            except Exception as e:  # one broken state site must not stop the national run
+                print(f"  !! {name} failed: {e}")
+                continue
+        if states:
+            found = [c for c in found if c.state in states]
+        print(f"  {len(found):,} companies from {name}")
+        lists.append(found)
     for seed in args.seed or []:
-        s = load_seed_csv(Path(seed))
-        print(f"  {len(s)} companies from {seed}")
-        lists.append(s)
+        found = load_seed_csv(Path(seed))
+        print(f"  {len(found):,} companies from {seed}")
+        lists.append(found)
+    return lists
 
-    companies = merge(*lists)
+
+def cmd_run(args) -> None:
+    from . import contacts
+    from .cache import Cache
+    from .sources.boem import _MAJORS, _PAPER_ENTITY
+    companies = [c for c in merge(*_fetch_sources(args))
+                 if not (_PAPER_ENTITY.search(c.name) or _MAJORS.search(c.name))]
     if args.limit:
         companies = companies[: args.limit]
-    print(f"{len(companies)} unique companies.")
-
+    print(f"{len(companies):,} unique companies.")
+    cdir = DATA / "cache"
     if not args.skip_discover:
-        discover.discover(companies, workers=args.workers)
-    audit.audit_all(companies, workers=args.workers)
+        discover.discover(companies, workers=args.workers, cache=Cache(cdir / "discover.jsonl"))
+    audit.audit_all(companies, workers=args.workers, cache=Cache(cdir / "audit.jsonl"))
     ranked = score.score_all(companies)
+    contacts.scrape_all(ranked, workers=args.workers, cache=Cache(cdir / "contacts.jsonl"))
     if args.require_site:
         ranked = [c for c in ranked if c.website]
 
     save_json(ranked, DATA / "leads.json")
     report.write_csv(ranked, DATA / "leads.csv")
     report.write_html(ranked, DATA / "leads.html")
-    print(f"\nWrote {len(ranked)} leads to data/leads.csv, data/leads.json, data/leads.html")
+    print(f"\nWrote {len(ranked):,} leads to data/leads.csv, data/leads.json, data/leads.html")
     for c in ranked[:15]:
         print(f"  {c.score:>3}  {c.name[:45]:<45} {c.website[:40]}")
 
@@ -116,10 +131,9 @@ def main() -> None:
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("run", help="full pipeline")
-    r.add_argument("--states", default="TX,LA,MS,AL,FL")
-    r.add_argument("--no-boem", action="store_true")
-    r.add_argument("--keep-holding-cos", action="store_true", help="don't drop trusts/holding cos/funds")
-    r.add_argument("--places", action="store_true", help="use Google Places (needs GOOGLE_PLACES_API_KEY)")
+    r.add_argument("--states", default="ALL", help="comma list of states to keep, or ALL")
+    r.add_argument("--sources", default="boem,tx_rrc",
+                   help="comma list: boem, tx_rrc, ... (see leadgen/sources/__init__.py), places (needs key)")
     r.add_argument("--places-pages", type=int, default=1)
     r.add_argument("--seed", action="append", help="extra CSV(s): name,city,state,website,phone")
     r.add_argument("--limit", type=int, default=0)

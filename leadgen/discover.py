@@ -68,7 +68,8 @@ _PARKED = re.compile(r"(domain (is )?for sale|buy this domain|parked free|domain
 
 _INDUSTRY = re.compile(r"\b(oil|gas|energy|offshore|drilling|petroleum|pipeline|wells?|exploration|"
                        r"midstream|upstream|reservoir|lease|marine|vessels?|fabrication|oilfield|"
-                       r"production|hydrocarbon|lng|refin\w*)\b")
+                       r"production|hydrocarbon|lng|refin\w*|hauling|trucking|disposal|saltwater|vacuum|roustabout|"
+                       r"welding|fabricat\w*|pipe|frac\w*|wireline|cementing|plugging|directional)\b")
 
 
 _OFF_INDUSTRY = re.compile(r"\b(news|magazines?|real estate|realty|office space|apartments?|for rent|"
@@ -136,9 +137,18 @@ def guess_website(company: Company, timeout: float = 8) -> str:
     return ""
 
 
-def discover(companies: list[Company], workers: int = 16, log=print) -> list[Company]:
-    todo = [c for c in companies if not c.website]
-    log(f"Discovering websites for {len(todo)} companies (of {len(companies)})...")
+def discover(companies: list[Company], workers: int = 16, log=print, cache=None) -> list[Company]:
+    todo = []
+    for c in companies:
+        if c.website:
+            continue
+        if cache is not None and c.key in cache:
+            url = cache.get(c.key)
+            if url:
+                c.website, c.website_source = url, "guess"
+            continue
+        todo.append(c)
+    log(f"Discovering websites for {len(todo)} companies (of {len(companies)}; rest cached or known)...")
 
     def work(c: Company):
         try:
@@ -148,6 +158,8 @@ def discover(companies: list[Company], workers: int = 16, log=print) -> list[Com
             url = ""
         if url:
             c.website, c.website_source = url, "guess"
+        if cache is not None:
+            cache.put(c.key, url)
         return c
 
     found = 0

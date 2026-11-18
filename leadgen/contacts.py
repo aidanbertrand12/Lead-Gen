@@ -128,15 +128,26 @@ def scrape(company: Company) -> dict:
             "pages_checked": len(docs)}
 
 
-def scrape_all(companies: list[Company], workers: int = 24, log=print) -> list[Company]:
-    todo = [c for c in companies if c.website]
-    log(f"Collecting contact info from {len(todo)} websites...")
+def scrape_all(companies: list[Company], workers: int = 24, log=print, cache=None) -> list[Company]:
+    todo = []
+    for c in companies:
+        if not c.website:
+            continue
+        if cache is not None and c.website in cache:
+            c.audit["contacts"] = cache.get(c.website)
+            if not c.phone and c.audit["contacts"].get("phones"):
+                c.phone = c.audit["contacts"]["phones"][0]
+            continue
+        todo.append(c)
+    log(f"Collecting contact info from {len(todo)} websites (others cached)...")
 
     def work(c: Company):
         try:
             c.audit["contacts"] = scrape(c)
         except Exception as e:
             c.audit["contacts"] = {"error": str(e)[:120]}
+        if cache is not None:
+            cache.put(c.website, c.audit["contacts"])
         if not c.phone and c.audit["contacts"].get("phones"):
             c.phone = c.audit["contacts"]["phones"][0]
         return c
@@ -145,6 +156,7 @@ def scrape_all(companies: list[Company], workers: int = 24, log=print) -> list[C
         for i, _ in enumerate(pool.map(work, todo), 1):
             if i % 50 == 0:
                 log(f"  {i}/{len(todo)} done")
-    found = sum(1 for c in todo if c.audit.get("contacts", {}).get("emails"))
-    log(f"Emails found for {found} of {len(todo)} companies.")
+    with_site = [c for c in companies if c.website]
+    found = sum(1 for c in with_site if c.audit.get("contacts", {}).get("emails"))
+    log(f"Emails found for {found} of {len(with_site)} companies with websites.")
     return companies

@@ -22,6 +22,10 @@ from ..models import Company
 
 URL = "https://www.data.boem.gov/Company/Files/compactdelimit.zip"
 GULF_STATES = {"TX", "LA", "MS", "AL", "FL"}
+ALL_STATES = {"AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN", "IA",
+              "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM",
+              "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA",
+              "WV", "WI", "WY"}
 
 # Entities that are almost never buyers of a website/AI package.
 _PAPER_ENTITY = re.compile(
@@ -63,7 +67,7 @@ def parse(path: Path, states: set[str] | None = None, skip_paper_entities: bool 
                 continue
             number, name, terminated, region = row[0], row[2].strip(), row[4].strip(), row[6]
             state = row[16].strip().upper()
-            if terminated or region != "G" or state not in states:
+            if terminated or state not in states:
                 continue
             if number in seen:  # same company, multiple addresses
                 continue
