@@ -40,7 +40,7 @@ _PAPER_ENTITY = re.compile(
 _MAJORS = re.compile(
     r"\b(exxon|mobil|chevron|shell|bp\b|b\.p\.|conoco|phillips 66|marathon|occidental|anadarko|"
     r"atlantic richfield|arco\b|texaco|gulf oil|hess\b|apache|apa corp|eni\b|equinor|statoil|total|"
-    r"repsol|petrobras|woodside|bhp|murphy|devon|eog\b|pioneer natural|kerr-mcgee|unocal|xto|enserch|"
+    r"repsol|petrobras|woodside|bhp|murphy|devon|eog\b|pioneer natural|kerr-mcgee|unocal|xto|enserch|enron|georgia power|southern company|duke energy|entergy|"
     r"sinopec|cnooc|petronas|mitsui|ecopetrol)\b",
     re.I,
 )

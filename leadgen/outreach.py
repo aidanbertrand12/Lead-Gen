@@ -106,6 +106,7 @@ class OutreachRow:
     city: str
     state: str
     website: str
+    business_type: str
     site_verified: str
     observation_1: str
     observation_2: str
@@ -128,14 +129,67 @@ def build_rows(companies: list[Company]) -> list[OutreachRow]:
         rows.append(OutreachRow(
             lead_id="", priority=prio, company=_display_name(c.name), contact_name=name, contact_title=title,
             email=email, backup_email=backup, phone=c.phone, city=c.city, state=c.state, website=c.website,
-            site_verified="yes" if conf == "high" else "CHECK",
+            business_type=business_type(c), site_verified="yes" if conf == "high" else "CHECK",
             observation_1=obs[0] if obs else "", observation_2=obs[1] if len(obs) > 1 else "",
             all_findings="; ".join(c.reasons),
         ))
     rows.sort(key=lambda r: (r.priority, r.email == "", r.company))
     for i, r in enumerate(rows, 1):
-        r.lead_id = f"GCS-{i:03d}"
+        r.lead_id = f"GCS-{i:05d}"
     return rows
+
+
+_SERVICE_ROLES = {"water hauler", "plugging contractor", "cementing contractor", "directional surveying",
+                  "transporter", "reserve pit cleaner", "pollution cleanup contractor", "saltwater disposal",
+                  "commercial disposal"}
+_MIDSTREAM_ROLES = {"pipeline operator", "pipeline affiliate", "gas processing plant", "gas gatherer",
+                    "oil gatherer", "condensate gatherer", "casinghead gas gatherer", "refinery",
+                    "gas purchaser", "reclaiming plant"}
+
+
+def business_type(c: Company) -> str:
+    """Short plain-English description from state-filing roles, e.g. 'oilfield services (water hauler)'."""
+    roles = set(c.roles)
+    if roles & _SERVICE_ROLES:
+        return "oilfield services (" + ", ".join(sorted(roles & _SERVICE_ROLES)) + ")"
+    if roles & _MIDSTREAM_ROLES:
+        return "midstream (" + ", ".join(sorted(roles & _MIDSTREAM_ROLES)) + ")"
+    if roles & {"oil operator", "gas operator", "operator"}:
+        return "oil & gas operator"
+    if "boem" in c.source:
+        return "offshore oil & gas"
+    return "oil & gas"
+
+
+CALL_FIELDS = ["company", "business_type", "contact_name", "contact_title", "other_officers", "phone",
+               "website", "email", "address", "city", "state", "zip", "source", "status", "notes"]
+
+
+def write_call_list(companies: list[Company], path: Path) -> int:
+    """Every company with a phone number (most have a named officer from state filings).
+    Sorted: those with a website (something concrete to talk about) first."""
+    rows = []
+    for c in companies:
+        if not c.phone:
+            continue
+        name, title, email, _ = pick_contact(c) if c.website else ("", "", "", "")
+        if not name:
+            execs = [o for o in c.officers if _EXEC.search(o.partition(", ")[2])] or c.officers
+            if execs:
+                name, _, title = execs[0].partition(", ")
+        others = [o for o in c.officers if not o.startswith(name or "\x00")]
+        rows.append({"company": _display_name(c.name), "business_type": business_type(c),
+                     "contact_name": name, "contact_title": title, "other_officers": "; ".join(others[:4]),
+                     "phone": c.phone, "website": c.website, "email": email, "address": c.address,
+                     "city": c.city, "state": c.state, "zip": c.zip, "source": c.source,
+                     "status": "", "notes": ""})
+    rows.sort(key=lambda r: (r["website"] == "", r["state"], r["company"]))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=CALL_FIELDS)
+        w.writeheader()
+        w.writerows(rows)
+    return len(rows)
 
 
 def _display_name(name: str) -> str:
@@ -163,15 +217,15 @@ def write_grok_csv(rows: list[OutreachRow], path: Path, emails_only: bool = True
 
 def grok_prompt(sender: dict) -> str:
     s = sender
-    return f"""You are my outreach assistant for {COMPANY}, a Gulf Coast company that modernizes \
-websites and sets up AI systems (24/7 website assistants, quote-request capture, and automated \
-lead generation) for oil & gas and energy companies.
+    return f"""You are my outreach assistant for {COMPANY}, a company that modernizes websites and \
+sets up AI systems (24/7 website assistants, quote-request capture, and automated lead generation) \
+for oil & gas and energy companies across the US.
 
 THE LEAD FILE
 I've connected a Google Sheet called "GCS Leads" (in my Google Drive). Each row is one company. \
 Columns: lead_id, priority, company, contact_name, contact_title, email, backup_email, phone, city, \
-state, website, site_verified, observation_1, observation_2, all_findings, status, date_sent, \
-follow_up_due, notes.
+state, website, business_type, site_verified, observation_1, observation_2, all_findings, status, \
+date_sent, follow_up_due, notes.
 
 YOUR JOB EACH RUN
 1. Pick the next {s['daily']} rows where: status is blank, email is not blank, and site_verified = "yes". \
@@ -196,8 +250,9 @@ clearly a first name (like royce@company.com), use that name. Otherwise use "Hi 
 - Sentence 1: say you were looking at their website ({{website}}) and mention observation_1 (and \
 observation_2 if it's there) in a friendly, helpful tone, like a neighbor pointing something out, \
 not criticizing. Use your own words; don't copy the observation text word for word.
-- Sentence 2-3: say {COMPANY} works with Gulf Coast energy companies to modernize their websites \
-and set up AI systems that answer inquiries around the clock and help bring in new work.
+- Sentence 2-3: say {COMPANY} works with companies like theirs (use business_type, e.g. "oilfield \
+service companies", "midstream companies", "oil & gas operators") to modernize their websites and set \
+up AI systems that answer inquiries around the clock and help bring in new work.
 - Then: say we have an offer we'd like to walk them through, and ask for a quick 15-minute call \
 this week or next. Include my booking link: {s['calendar']}
 - DO NOT mention any price, cost, dollar amount, discount, or "free". Don't say "AI-powered \

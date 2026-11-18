@@ -16,7 +16,7 @@ from reportlab.platypus import (CondPageBreak, KeepTogether, PageBreak, Paragrap
                                 SimpleDocTemplate, Spacer, Table, TableStyle)
 
 from .models import Company
-from .outreach import COMPANY, OutreachRow, build_rows, grok_prompt
+from .outreach import COMPANY, OutreachRow, _display_name, build_rows, business_type, grok_prompt
 
 FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
 pdfmetrics.registerFont(TTFont("Sans", str(FONT_DIR / "DejaVuSans.ttf")))
@@ -123,7 +123,7 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
     s = []
     s += [Spacer(1, 1.3 * inch), P(COMPANY, "subtitle"), P("Cold Outreach Setup Guide", "title"),
           Spacer(1, 6), P("How to set up your sending inbox, Grok and your daily routine so you can email "
-                          "Gulf Coast energy companies and book intro calls.", "subtitle"),
+                          "oil & gas companies and book intro calls.", "subtitle"),
           Spacer(1, 0.4 * inch)]
     s.append(callout([
         P("<b>The goal of every email is a 15-minute call. Not a sale.</b>"),
@@ -140,6 +140,7 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
         ["Ready to email now (website confirmed + email)", f"{stats['ready']:,}"],
         ["With a named executive (CEO, President, owner...)", f"{stats['named']:,}"],
         ["Call list (phone, no email)", f"{stats['call_only']:,}"],
+        ["States covered", f"{stats.get('states', 0)}"],
     ], [5.0 * inch, 2.0 * inch]))
     s.append(Spacer(1, 0.25 * inch))
     s.append(P("<b>Files that go with this guide</b>", "body"))
@@ -149,6 +150,7 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
         "<b>grok_leads.csv</b>: the lead file you upload to Google Drive for Grok (one row per company "
         "that has an email).",
         "<b>grok_prompt.txt</b>: the same prompt as in the lead book, ready to copy and paste.",
+        "<b>call_list.csv</b>: every company with a phone number and (usually) a named officer, for calling.",
     ])
     s.append(PageBreak())
 
@@ -420,8 +422,11 @@ def _card(row: OutreachRow, c: Company) -> KeepTogether:
                               ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
     loc = ", ".join(x for x in [c.address, c.city, f"{c.state} {c.zip}".strip()] if x)
     contact = f"{escape(row.contact_name)}, {escape(row.contact_title)}" if row.contact_name else "(no named contact found)"
-    others = [p for p in ct.get("people", []) if not p.startswith(row.contact_name or "\x00")]
+    others = [p for p in list(ct.get("people", [])) + list(c.officers)
+              if not p.startswith(row.contact_name or "\x00")]
+    others = list(dict.fromkeys(others))
     lines = [
+        ("Business type", escape(row.business_type)),
         ("Address", escape(loc)),
         ("Website", escape(c.website) + ("" if row.site_verified == "yes" else
                                           " &nbsp;<font color='#B5482A'><b>CHECK: verify this is their site</b></font>")),
@@ -469,30 +474,51 @@ def _card(row: OutreachRow, c: Company) -> KeepTogether:
     return KeepTogether([head, body, Spacer(1, 12)])
 
 
+def _compact(header: list[str], rows: list[list[str]], widths: list[float]) -> Table:
+    data = [header] + [[P(escape(str(v)), "tiny") for v in r] for r in rows]
+    t = Table(data, colWidths=[w * inch for w in widths], repeatRows=1)
+    t.setStyle(TableStyle([("FONTNAME", (0, 0), (-1, 0), "Sans-Bold"), ("FONTSIZE", (0, 0), (-1, 0), 7.2),
+                           ("BACKGROUND", (0, 0), (-1, 0), SAND), ("LINEBELOW", (0, 0), (-1, -1), 0.25, LINE),
+                           ("TOPPADDING", (0, 0), (-1, -1), 1.3), ("BOTTOMPADDING", (0, 0), (-1, -1), 1.3),
+                           ("LEFTPADDING", (0, 0), (-1, -1), 3), ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+                           ("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    return t
+
+
+def _best_officer(c: Company) -> str:
+    from .outreach import _EXEC
+    execs = [o for o in c.officers if _EXEC.search(o.partition(", ")[2])] or c.officers
+    return execs[0] if execs else ""
+
+
 def build_lead_book(path: Path, companies: list[Company], sender: dict) -> dict:
     rows = build_rows(companies)
     by_site = {c.website: c for c in companies if c.website}
     ready = [r for r in rows if r.email and r.site_verified == "yes"]
     check = [r for r in rows if r.email and r.site_verified != "yes"]
-    call = [r for r in rows if not r.email and (by_site[r.website].audit.get("contacts", {}) or {}).get("phones")]
-    rest = [r for r in rows if not r.email and r not in call]
-    no_site = sorted([c for c in companies if not c.website], key=lambda c: (c.state, c.city, c.name))
+    call = [r for r in rows if not r.email and r.phone]
+    rest = [r for r in rows if not r.email and not r.phone]
+    no_site = [c for c in companies if not c.website]
+    no_site_phone = sorted([c for c in no_site if c.phone], key=lambda c: (c.state, c.city, c.name))
+    states = sorted({c.state for c in companies if c.state})
     stats = {"total": len(companies), "with_site": len(rows), "with_email": len(ready) + len(check),
              "ready": len(ready), "named": sum(1 for r in rows if r.email and r.contact_name),
-             "call_only": len(call), "check": len(check), "no_contact": len(rest), "no_site": len(no_site)}
+             "call_only": len(call) + len(no_site_phone), "check": len(check), "no_contact": len(rest),
+             "no_site": len(no_site), "states": len(states)}
 
-    s = [Spacer(1, 1.3 * inch), P(COMPANY, "subtitle"), P("Gulf Coast Energy Lead Book", "title"),
-         Spacer(1, 6), P(f"{stats['total']:,} oil &amp; gas companies across Texas, Louisiana, Mississippi, "
-                         f"Alabama and Florida, with website audits, contact details and outreach talking points.",
-                         "subtitle"), Spacer(1, 0.35 * inch)]
+    s = [Spacer(1, 1.3 * inch), P(COMPANY, "subtitle"), P("US Oil &amp; Gas Lead Book", "title"),
+         Spacer(1, 6), P(f"{stats['total']:,} oil &amp; gas operators, midstream and oilfield service companies "
+                         f"across {len(states)} states, with website audits, contact details and outreach talking "
+                         f"points.", "subtitle"), Spacer(1, 0.35 * inch)]
     s.append(table([
         ["Section", "What's in it", "Leads"],
-        ["A. Ready to email", "Website confirmed and email found. Start here, in order.", f"{len(ready)}"],
-        ["B. Verify, then email", "Email found, but the website was matched by guessing. Check the site first.", f"{len(check)}"],
-        ["C. Call list", "No email found, but a phone number is on their website.", f"{len(call)}"],
-        ["D. Website, no contact info", "Use their website's contact form, or look them up on LinkedIn.", f"{len(rest)}"],
-        ["Appendix", "Companies with no website found. Many may be inactive. Optional printing.", f"{len(no_site):,}"],
-    ], [1.9 * inch, 4.3 * inch, 0.8 * inch]))
+        ["A. Ready to email", "Website confirmed and email found. Full lead cards. Start here, in order.", f"{len(ready):,}"],
+        ["B. Verify, then email", "Email found, but the website was matched by guessing. Check the site first.", f"{len(check):,}"],
+        ["C. Call list: website, no email", "Phone number known and something concrete to talk about (their website).", f"{len(call):,}"],
+        ["D. Website, no contact info", "Use their website's contact form, or look them up on LinkedIn.", f"{len(rest):,}"],
+        ["E. Call list: no website", "Named officer and phone from state filings, no website found. "
+                                     "Also in call_list.csv. Optional printing.", f"{len(no_site_phone):,}"],
+    ], [2.1 * inch, 4.1 * inch, 0.8 * inch]))
     s.append(Spacer(1, 0.25 * inch))
     s.append(callout([
         P("<b>How to read a lead card</b>"),
@@ -500,10 +526,12 @@ def build_lead_book(path: Path, companies: list[Company], sender: dict) -> dict:
             "<b>Priority A</b>: confirmed website, most outdated (score 40+). <b>B</b>: confirmed website. "
             "<b>C</b>: website needs checking.",
             "<b>Score</b> (0-100): how much their website and lead capture need work. Higher means a bigger opportunity.",
+            "<b>Business type</b>: from state licensing records (operator, midstream, or the oilfield service they're licensed for).",
             "<b>Say on email/call</b>: the friendly observations Grok uses in the email. Use the same ones on the call.",
             "<b>Tracking</b>: tick the boxes as you go so the printed book stays your source of truth.",
         ]),
-        P("Contact details were collected from each company's own public website and may be out of date. "
+        P("Sources: BOEM (federal offshore register), Texas Railroad Commission and Oklahoma Corporation "
+          "Commission licensing records, plus each company's own public website. Details may be out of date. "
           "Always confirm before relying on them.", "small"),
     ]))
     s.append(PageBreak())
@@ -516,15 +544,18 @@ def build_lead_book(path: Path, companies: list[Company], sender: dict) -> dict:
     s.append(Preformatted(grok_prompt(sender), ST["monobox"], maxLineLength=100))
     s.append(Spacer(1, 8))
     s.append(P("Example of the kind of email this produces", "h2"))
-    ex = ready[0] if ready else None
+    ex = next((r for r in ready if r.contact_name), ready[0] if ready else None)
     if ex:
         first = ex.contact_name.split()[0] if ex.contact_name else f"{ex.company} team"
         obs = " and ".join(o for o in (ex.observation_1, ex.observation_2) if o)
+        kind = {"oilfield": "oilfield service companies", "midstream": "midstream companies",
+                "oil & gas operator": "oil & gas operators"}
+        like = next((v for k, v in kind.items() if ex.business_type.startswith(k)), "oil & gas companies")
         sample = (f"Subject: quick note about {ex.company}'s website\n\n"
                   f"Hi {first},\n\n"
                   f"I was looking at {ex.website.split('//')[-1].rstrip('/')} and noticed {obs}. "
                   f"Easy things to miss when you're busy running operations.\n\n"
-                  f"{COMPANY} works with Gulf Coast energy companies to modernize their websites and set up AI "
+                  f"{COMPANY} works with {like} to modernize their websites and set up AI "
                   f"systems that answer inquiries around the clock and help bring in new work.\n\n"
                   f"We have an offer I'd like to walk you through. Would you be open to a quick 15-minute call "
                   f"this week or next? You can grab a time here: {sender['calendar']}\n\n"
@@ -539,34 +570,45 @@ def build_lead_book(path: Path, companies: list[Company], sender: dict) -> dict:
         ("B. Verify, then email", "These websites were matched by guessing the domain. Open each one. If it's "
                                   "the right company, change site_verified from CHECK to yes in the sheet. "
                                   "If not, delete the row.", check),
-        ("C. Call list", "No email on their website, but there's a phone number. Call, mention what you noticed "
-                         "on their site, and ask for the right person and their email.", call),
-        ("D. Website, no contact info", "Use the contact form on their website, or find the owner or "
-                                        "president on LinkedIn.", rest),
     ]:
         if not group:
             continue
-        s.append(P(f"{title} ({len(group)})", "h1"))
+        s.append(P(f"{title} ({len(group):,})", "h1"))
         s.append(P(intro))
         for r in group:
             s.append(_card(r, by_site[r.website]))
         s.append(PageBreak())
 
-    s.append(P(f"Appendix: Companies with no website found ({len(no_site):,})", "h1"))
-    s.append(P("These companies are active on the federal offshore register (BOEM), but no website was found "
-               "for them. Many are small, inactive, or exist only on paper. Some may be worth a call or a quick "
-               "Google search, especially the ones in Gulf Coast towns like Lafayette, Houma or New Iberia. "
-               "This section is long. Print it only if you need it.", "small"))
-    rows_tbl = [["Company", "Address", "City", "St", "ZIP"]]
-    rows_tbl += [[P(escape(c.name), "tiny"), P(escape(c.address), "tiny"), P(escape(c.city), "tiny"),
-                  P(c.state, "tiny"), P(c.zip, "tiny")] for c in no_site]
-    t = Table(rows_tbl, colWidths=[2.55 * inch, 2.3 * inch, 1.2 * inch, 0.35 * inch, 0.6 * inch], repeatRows=1)
-    t.setStyle(TableStyle([("FONTNAME", (0, 0), (-1, 0), "Sans-Bold"), ("FONTSIZE", (0, 0), (-1, 0), 7.5),
-                           ("BACKGROUND", (0, 0), (-1, 0), SAND), ("LINEBELOW", (0, 0), (-1, -1), 0.25, LINE),
-                           ("TOPPADDING", (0, 0), (-1, -1), 1.3), ("BOTTOMPADDING", (0, 0), (-1, -1), 1.3),
-                           ("VALIGN", (0, 0), (-1, -1), "TOP")]))
-    s.append(t)
+    if call:
+        s.append(P(f"C. Call list: website, no email ({len(call):,})", "h1"))
+        s.append(P("Call, mention what you noticed on their website, and ask for the owner's or manager's email."))
+        s.append(_compact(["ID", "Company", "Type", "Contact", "Phone", "Website", "City, St", "Talking point"],
+                          [[r.lead_id, r.company, r.business_type.split(" (")[0], r.contact_name or
+                            _best_officer(by_site[r.website]).partition(",")[0], r.phone,
+                            r.website.split("//")[-1].rstrip("/"), f"{r.city}, {r.state}", r.observation_1]
+                           for r in call],
+                          [0.62, 1.2, 0.7, 0.9, 0.8, 1.08, 0.8, 0.9]))
+        s.append(PageBreak())
+    if rest:
+        s.append(P(f"D. Website, no contact info ({len(rest):,})", "h1"))
+        s.append(P("No email or phone on the website. Use the site's contact form, or find the owner on LinkedIn."))
+        s.append(_compact(["ID", "Company", "Type", "Website", "City, St", "Talking point"],
+                          [[r.lead_id, r.company, r.business_type.split(" (")[0],
+                            r.website.split("//")[-1].rstrip("/"), f"{r.city}, {r.state}", r.observation_1]
+                           for r in rest],
+                          [0.62, 1.55, 0.85, 1.45, 0.9, 1.63]))
+        s.append(PageBreak())
+    if no_site_phone:
+        s.append(P(f"E. Call list: no website ({len(no_site_phone):,})", "h1"))
+        s.append(P("Licensed companies with a named officer and phone number from state filings, but no website "
+                   "found. Many small operators and service companies don't have one, and they're often the most "
+                   "open to getting one. Sorted by state and city. The same list is in call_list.csv. "
+                   "This section is long. Print only the states you need.", "small"))
+        s.append(_compact(["Company", "Type", "Officer", "Phone", "City", "St"],
+                          [[_display_name(c.name), business_type(c), _best_officer(c), c.phone, c.city, c.state]
+                           for c in no_site_phone],
+                          [2.0, 1.55, 1.75, 0.8, 0.6, 0.3]))
 
-    doc = _doc(path, f"{COMPANY} - Gulf Coast Energy Lead Book")
+    doc = _doc(path, f"{COMPANY} - US Oil & Gas Lead Book")
     doc.build(s, onFirstPage=_page_deco("Lead Book"), onLaterPages=_page_deco("Lead Book"))
     return stats

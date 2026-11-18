@@ -105,16 +105,17 @@ def cmd_outreach(args) -> None:
     from .models import load_json
     sender = {"name": args.name, "title": args.title, "phone": args.phone, "address": args.address,
               "calendar": args.calendar, "daily": args.daily}
-    companies = load_json(DATA / "leads.json")
+    companies = load_json(Path(args.leads))
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     rows = outreach.build_rows(companies)
     n = outreach.write_grok_csv(rows, out / "grok_leads.csv")
     outreach.write_prompt(sender, out / "grok_prompt.txt")
+    nc = outreach.write_call_list(companies, out / "call_list.csv")
     stats = pdfs.build_lead_book(out / "GCS_Lead_Book.pdf", companies, sender)
     pdfs.build_setup_guide(out / "GCS_Setup_Guide.pdf", stats, sender)
-    print(f"Wrote {out}/grok_leads.csv ({n} companies with email), grok_prompt.txt, "
-          f"GCS_Lead_Book.pdf, GCS_Setup_Guide.pdf")
+    print(f"Wrote {out}/grok_leads.csv ({n:,} companies with email), call_list.csv ({nc:,}), "
+          f"grok_prompt.txt, GCS_Lead_Book.pdf, GCS_Setup_Guide.pdf")
     print(stats)
 
 
@@ -157,6 +158,7 @@ def main() -> None:
     o.add_argument("--calendar", default="[Your Booking Link]")
     o.add_argument("--daily", type=int, default=10, help="max first emails per Grok run")
     o.add_argument("--out", default="outreach")
+    o.add_argument("--leads", default="data/leads.json")
     o.set_defaults(fn=cmd_outreach)
 
     u = sub.add_parser("audit-url", help="audit a single website")
