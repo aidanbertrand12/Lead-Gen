@@ -26,7 +26,7 @@ GULF_STATES = {"TX", "LA", "MS", "AL", "FL"}
 # Entities that are almost never buyers of a website/AI package.
 _PAPER_ENTITY = re.compile(
     r"\b(trust|drilling program|partnership|partners? (i|ii|iii|iv|v)\b|program|"
-    r"holdings?|royalt\w*|funds?|estate|bank|capital|investments?|minerals?)\b",
+    r"holdings?|royalt\w*|individual|funds?|estate|bank|capital|investments?|minerals?)\b",
     re.I,
 )
 
