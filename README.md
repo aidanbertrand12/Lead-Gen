@@ -30,10 +30,12 @@ python -m leadgen run --limit 100                # quick test
 python -m leadgen run                            # all BOEM Gulf companies (~30 min)
 GOOGLE_PLACES_API_KEY=... python -m leadgen run --places --require-site
 python -m leadgen run --no-boem --seed data/my_list.csv
+python -m leadgen rescore                        # re-filter/re-score data/leads.json, no re-crawl
 python -m leadgen audit-url https://somecompany.com   # audit a single site for a sales call
 ```
 
 ## Notes
+- `site_confidence`: **high** = the page title names the company and the industry; **review** = check by hand (e.g. a bare "Home" title); guesses that are clearly another business are dropped. Spend 30 seconds checking any guessed site before outreach.
 - Score 50+ means a hot lead. A score of 40 with "No website found" needs a manual check, because many BOEM
   entities are inactive or paper companies.
 - Domain guessing misses companies whose domain doesn't match their name. Google Places fills that gap.

@@ -58,6 +58,21 @@ def cmd_run(args) -> None:
         print(f"  {c.score:>3}  {c.name[:45]:<45} {c.website[:40]}")
 
 
+def cmd_rescore(args) -> None:
+    """Re-apply filters + scoring to data/leads.json without re-crawling."""
+    from .models import load_json
+    from .sources.boem import _MAJORS, _PAPER_ENTITY
+    companies = [c for c in load_json(DATA / "leads.json")
+                 if not (c.source == "boem" and (_MAJORS.search(c.name) or _PAPER_ENTITY.search(c.name)))]
+    for c in companies:  # undo previous grouping so it can be redone
+        c.audit.pop("related_entities", None)
+    ranked = score.score_all(companies)
+    save_json(ranked, DATA / "leads.json")
+    report.write_csv(ranked, DATA / "leads.csv")
+    report.write_html(ranked, DATA / "leads.html")
+    print(f"Rescored {len(ranked)} leads.")
+
+
 def cmd_audit_url(args) -> None:
     from .models import Company
     c = Company(name=args.url, website=args.url)
@@ -82,6 +97,9 @@ def main() -> None:
     r.add_argument("--skip-discover", action="store_true")
     r.add_argument("--require-site", action="store_true", help="only output companies with a website")
     r.set_defaults(fn=cmd_run)
+
+    rs = sub.add_parser("rescore", help="re-filter and re-score data/leads.json without re-crawling")
+    rs.set_defaults(fn=cmd_rescore)
 
     u = sub.add_parser("audit-url", help="audit a single website")
     u.add_argument("url")

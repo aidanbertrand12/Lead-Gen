@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .models import Company
 
-CSV_FIELDS = ["score", "name", "city", "state", "phone", "website", "website_source",
+CSV_FIELDS = ["score", "site_confidence", "name", "city", "state", "phone", "website", "website_source",
               "copyright_year", "https", "mobile_friendly", "chat_widget", "has_form",
               "analytics", "wordpress_version", "jquery_version", "load_seconds",
               "reasons", "pitch", "related_entities", "address", "zip", "source", "source_id"]
@@ -21,7 +21,7 @@ def write_csv(companies: list[Company], path: Path) -> None:
         for c in companies:
             a = c.audit
             w.writerow({
-                "score": c.score, "name": c.name, "city": c.city, "state": c.state,
+                "score": c.score, "site_confidence": a.get("site_confidence", ""), "name": c.name, "city": c.city, "state": c.state,
                 "phone": c.phone, "website": c.website, "website_source": c.website_source,
                 "copyright_year": a.get("copyright_year") or "", "https": a.get("https", ""),
                 "mobile_friendly": a.get("has_viewport", ""), "chat_widget": a.get("chat_widget", ""),
@@ -45,7 +45,7 @@ def write_html(companies: list[Company], path: Path) -> None:
         site = (f'<a href="{html.escape(c.website)}" target="_blank" rel="noopener">'
                 f'{html.escape(c.website.split("//")[-1].rstrip("/"))}</a>') if c.website else "<em>none found</em>"
         rows.append(
-            f"<tr><td class=s>{c.score}</td><td>{html.escape(c.name)}{_subs(c)}</td>"
+            f"<tr><td class=s>{c.score}</td><td>{c.audit.get('site_confidence','')}</td><td>{html.escape(c.name)}{_subs(c)}</td>"
             f"<td>{html.escape(c.city)}, {c.state}</td><td>{site}</td>"
             f"<td>{html.escape('; '.join(c.reasons))}</td><td>{html.escape(', '.join(c.pitch))}</td></tr>"
         )
@@ -65,7 +65,7 @@ p{{color:var(--mut)}}input{{padding:6px;width:min(400px,100%);margin-bottom:8px}
 <h1>Gulf Coast lead audit</h1>
 <p>{len(companies)} companies · {with_site} with websites · {hot} scored 50+ (hot leads). Click a header to sort.</p>
 <input id=q placeholder="Filter…" oninput="f()">
-<div class=wrap><table id=t><thead><tr><th>Score</th><th>Company</th><th>Location</th><th>Website</th><th>Findings</th><th>Pitch</th></tr></thead>
+<div class=wrap><table id=t><thead><tr><th>Score</th><th>Site match</th><th>Company</th><th>Location</th><th>Website</th><th>Findings</th><th>Pitch</th></tr></thead>
 <tbody>{''.join(rows)}</tbody></table></div>
 <script>
 function f(){{const q=document.getElementById('q').value.toLowerCase();for(const r of document.querySelectorAll('#t tbody tr'))r.style.display=r.textContent.toLowerCase().includes(q)?'':'none'}}

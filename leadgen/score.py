@@ -5,6 +5,8 @@ in PRICING.md so the sales pitch writes itself.
 """
 from __future__ import annotations
 
+import re
+
 from .audit import THIS_YEAR
 from .models import Company
 
@@ -38,6 +40,26 @@ RULES = [
     (lambda a: a.get("analytics") == ["universal_analytics_only"], 5, "Only dead Universal Analytics (stopped in 2023)", "CRM + automation"),
     (lambda a: a.get("reachable") and "hubspot" not in a.get("analytics", []), 2, "No marketing automation / CRM detected", "CRM + automation"),
 ]
+
+
+_IND_TITLE = re.compile(r"\b(oil|gas|energy|offshore|drilling|petroleum|pipeline|exploration|production|"
+                        r"resources|operating|midstream|marine|well|oilfield|e&p)\b", re.I)
+_BAD_TITLE = re.compile(r"\b(software|construction company|family|humidif\w*|calendar|watercolou?r|"
+                        r"real estate|news|magazine)\b", re.I)
+
+
+def site_confidence(c: Company) -> str:
+    """How sure we are the website belongs to this company: seed/places = given; guesses get checked."""
+    if not c.website:
+        return ""
+    if c.website_source in ("seed", "places"):
+        return "high"
+    title = c.audit.get("title", "")
+    final = c.audit.get("final_url", c.website)
+    host = re.sub(r"^https?://", "", final).split("/")[0]
+    if _BAD_TITLE.search(title) or not re.search(r"\.(com|net|us|org|energy)$", host):
+        return "wrong"
+    return "high" if _IND_TITLE.search(title) else "review"
 
 
 def score(c: Company) -> Company:
@@ -94,4 +116,14 @@ def group_by_site(companies: list[Company]) -> list[Company]:
 
 
 def score_all(companies: list[Company]) -> list[Company]:
-    return sorted((score(c) for c in group_by_site(companies)), key=lambda c: c.score, reverse=True)
+    out = []
+    for c in companies:
+        conf = site_confidence(c)
+        if conf == "wrong":  # guessed site is someone else's: treat as no site
+            c.website, c.website_source, c.audit = "", "", {}
+            conf = ""
+        c.audit["site_confidence"] = conf
+        out.append(c)
+    order = {"high": 0, "review": 1, "": 2}
+    return sorted((score(c) for c in group_by_site(out)),
+                  key=lambda c: (order[c.audit.get("site_confidence", "")], -c.score))
