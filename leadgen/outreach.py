@@ -39,7 +39,7 @@ OBSERVATIONS = [
 _FREE_MAIL = {"gmail.com", "yahoo.com", "aol.com", "hotmail.com", "outlook.com", "att.net",
               "sbcglobal.net", "bellsouth.net", "cox.net", "comcast.net", "msn.com", "icloud.com"}
 _EXEC = re.compile(r"president|ceo|chief executive|owner|founder|managing (partner|director|member)|"
-                   r"sole proprietor|manager|member|partner|"
+                   r"sole proprietor|manager|member|partner|^contact$|"
                    r"principal|general manager|coo|chief operating|business development|chairman", re.I)
 _SKIP_TITLE = re.compile(r"human resources|\bhr\b|land\b|regulatory|geolog|geoscience|accounting|"
                          r"controller|reservoir|drilling|completions|it\b|safety|hse", re.I)

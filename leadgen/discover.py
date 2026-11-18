@@ -31,27 +31,30 @@ def _clean_tokens(name: str) -> list[str]:
     return [t for t in re.split(r"[^a-z0-9]+", name) if t]
 
 
-def candidate_domains(name: str) -> list[str]:
+def candidate_domains(name: str, limit: int = 10) -> list[str]:
     toks = _clean_tokens(name)
-    if not toks:
-        return []
     no_and = [t for t in toks if t != "and"]
-    distinctive = [t for t in no_and if t not in _GENERIC]
-    stems = ["".join(no_and), "-".join(no_and)]
+    if not no_and:
+        return []
+    distinctive = [t for t in no_and if t not in _GENERIC and len(t) > 1]
+    stems = ["".join(no_and)]
+    if len(no_and) > 1:
+        stems.append("-".join(no_and))
     if distinctive and distinctive != no_and:
-        stems += ["".join(distinctive), "".join(distinctive) + no_and[-1]]
-    if len(no_and) >= 2:
+        base = "".join(distinctive)
+        stems.append(base)
+        if len(base) >= 4:
+            stems += [base + s for s in ("energy", "oil", "oilfield", "services")]
+    if len(no_and) >= 3:
         stems.append("".join(no_and[:2]))
-    if distinctive:
-        stems += [distinctive[0] + s for s in ("energy", "oil", "offshore", "inc", "llc")]
     seen, out = set(), []
-    for s in stems:
-        for tld in (".com", ".net", ".us"):
-            d = s + tld
-            if 3 <= len(s) <= 63 and d not in seen:
+    for tld in (".com", ".net", ".us"):
+        for st in stems:
+            d = st + tld
+            if 4 <= len(st) <= 63 and d not in seen:
                 seen.add(d)
                 out.append(d)
-    return out
+    return out[:limit]
 
 
 def _resolves(domain: str) -> bool:
@@ -124,11 +127,12 @@ def _matches_company(html: str, company: Company, domain: str) -> bool:
 
 def guess_website(company: Company, timeout: float = 8) -> str:
     for domain in candidate_domains(company.name):
-        if not _resolves(domain):
-            continue
+        # No DNS lookup: through the proxy a dead domain fails in ~0.1s, faster than resolving it.
         for scheme in ("https://", "http://"):
             try:
                 r = requests.get(scheme + domain, headers=HEADERS, timeout=timeout, allow_redirects=True)
+            except requests.exceptions.ProxyError:
+                break  # host doesn't exist
             except requests.RequestException:
                 continue
             if r.status_code < 400 and _matches_company(r.text[:300_000], company, domain):
