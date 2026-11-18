@@ -486,8 +486,9 @@ def _compact(header: list[str], rows: list[list[str]], widths: list[float]) -> T
 
 
 def _best_officer(c: Company) -> str:
-    from .outreach import _EXEC
-    execs = [o for o in c.officers if _EXEC.search(o.partition(", ")[2])] or c.officers
+    from .outreach import _EXEC, real_person
+    real = [o for o in c.officers if real_person(o.partition(", ")[0])]
+    execs = [o for o in real if _EXEC.search(o.partition(", ")[2])] or real
     return execs[0] if execs else ""
 
 

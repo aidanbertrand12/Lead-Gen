@@ -45,6 +45,19 @@ _SKIP_TITLE = re.compile(r"human resources|\bhr\b|land\b|regulatory|geolog|geosc
                          r"controller|reservoir|drilling|completions|it\b|safety|hse", re.I)
 
 
+_SKIP_MAILBOX = re.compile(r"^(owner\.?relations|ownerrelations|royalt\w*|land\w*|division\.?orders?|"
+                           r"do|revenue|accounts?|ap|ar|payables?|receivables?|hr|careers|jobs|safety|"
+                           r"compliance|legal|investor\w*|ir|media|press|webmaster|privacy)@", re.I)
+
+
+_NOT_PERSON = re.compile(r"\d|\b(llc|inc|corp|co|company|holdings?|ltd|lp|trust|energy|oil|gas|operating|"
+                         r"email|confirm|unknown|none|n/?a|office|dept|department|services?)\b", re.I)
+
+
+def real_person(name: str) -> bool:
+    return bool(name) and len(name.split()) >= 2 and not _NOT_PERSON.search(name)
+
+
 def observations(c: Company, limit: int = 2) -> list[str]:
     out = []
     for key, text in OBSERVATIONS:
@@ -63,12 +76,15 @@ def pick_contact(c: Company) -> tuple[str, str, str, str]:
     """Returns (contact_name, contact_title, email, backup_email)."""
     ct = c.audit.get("contacts", {}) or {}
     site_hosts = {_host(c.website), _host(c.audit.get("final_url", ""))} - {""}
-    emails = [e for e in ct.get("emails", [])
+    emails = [e for e in ct.get("emails", []) if not _SKIP_MAILBOX.match(e)]
+    emails = [e for e in emails
               if e.split("@")[-1] in site_hosts or e.split("@")[-1] in _FREE_MAIL
               or any(e.split("@")[-1].split(".")[0] in h for h in site_hosts)]
     people = []
     for p in list(ct.get("people", [])) + list(c.officers):
         name, _, title = p.partition(", ")
+        if not real_person(name):
+            continue
         if _EXEC.search(title) and not _SKIP_TITLE.search(title):
             people.append((name, title))
     name, title = people[0] if people else ("", "")
@@ -174,7 +190,8 @@ def write_call_list(companies: list[Company], path: Path) -> int:
             continue
         name, title, email, _ = pick_contact(c) if c.website else ("", "", "", "")
         if not name:
-            execs = [o for o in c.officers if _EXEC.search(o.partition(", ")[2])] or c.officers
+            real = [o for o in c.officers if real_person(o.partition(", ")[0])]
+            execs = [o for o in real if _EXEC.search(o.partition(", ")[2])] or real
             if execs:
                 name, _, title = execs[0].partition(", ")
         others = [o for o in c.officers if not o.startswith(name or "\x00")]

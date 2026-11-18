@@ -78,7 +78,7 @@ def cmd_rescore(args) -> None:
     from .models import load_json
     from .sources.boem import _MAJORS, _PAPER_ENTITY
     companies = [c for c in load_json(DATA / "leads.json")
-                 if not (c.source == "boem" and (_MAJORS.search(c.name) or _PAPER_ENTITY.search(c.name)))]
+                 if not (_MAJORS.search(c.name) or _PAPER_ENTITY.search(c.name))]
     for c in companies:  # undo previous grouping so it can be redone
         c.audit.pop("related_entities", None)
     ranked = score.score_all(companies)

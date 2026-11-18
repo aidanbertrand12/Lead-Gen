@@ -48,18 +48,40 @@ _BAD_TITLE = re.compile(r"\b(software|construction company|family|humidif\w*|cal
                         r"real estate|news|magazine)\b", re.I)
 
 
+_FOREIGN_TITLE = re.compile(r"[À-ÖØ-öø-ÿ]|\b(energiespeicher|startseite|accueil|inicio|empresa|"
+                            r"limited\s*\|\s*asx|pty|gmbh|s\.a\.|b\.v\.|srl)\b", re.I)
+
+
 def site_confidence(c: Company) -> str:
-    """How sure we are the website belongs to this company: seed/places = given; guesses get checked."""
+    """How sure we are the website belongs to this company: seed/places = given; guesses get checked.
+    'high' must be high-precision: anything doubtful becomes 'review' (shown as CHECK)."""
+    from .discover import _GENERIC, _clean_tokens
     if not c.website:
         return ""
     if c.website_source in ("seed", "places"):
         return "high"
     title = c.audit.get("title", "")
+    tl = title.lower()
     final = c.audit.get("final_url", c.website)
-    host = re.sub(r"^https?://", "", final).split("/")[0]
-    if _BAD_TITLE.search(title) or not re.search(r"\.(com|net|us|org|energy)$", host):
+    host = re.sub(r"^https?://", "", final).split("/")[0].lower().removeprefix("www.")
+    if _BAD_TITLE.search(title) or _FOREIGN_TITLE.search(title) or \
+            not re.search(r"\.(com|net|us|org|energy)$", host):
         return "wrong"
-    return "high" if _IND_TITLE.search(title) else "review"
+    toks = [t for t in _clean_tokens(c.name) if t != "and" and len(t) > 1]
+    distinctive = [t for t in toks if t not in _GENERIC] or toks
+    others = [t for t in toks if t not in distinctive]
+    # Redirected to a domain that doesn't carry the company's name -> someone else's site
+    hostcore = host.split(".")[0].replace("-", "")
+    if distinctive and not any(t in hostcore for t in distinctive):
+        return "review"
+    if not _IND_TITLE.search(title):
+        return "review"
+    # One distinctive word (e.g. "Exceed Petroleum"): the title must also share another name word
+    if len(distinctive) == 1 and others and not any(re.search(rf"\b{re.escape(t)}\b", tl) for t in others):
+        return "review"
+    if not all(re.search(rf"\b{re.escape(t)}", tl) for t in distinctive[:2]):
+        return "review"
+    return "high"
 
 
 def score(c: Company) -> Company:

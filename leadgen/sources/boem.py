@@ -40,7 +40,7 @@ _PAPER_ENTITY = re.compile(
 _MAJORS = re.compile(
     r"\b(exxon|mobil|chevron|shell|bp\b|b\.p\.|conoco|phillips 66|marathon|occidental|anadarko|"
     r"atlantic richfield|arco\b|texaco|gulf oil|hess\b|apache|apa corp|eni\b|equinor|statoil|total|"
-    r"repsol|petrobras|woodside|bhp|murphy|devon|eog\b|pioneer natural|kerr-mcgee|unocal|xto|enserch|enron|georgia power|southern company|duke energy|entergy|"
+    r"repsol|petrobras|woodside|bhp|murphy|devon|eog\b|pioneer natural|kerr-mcgee|unocal|xto|enserch|enron|georgia power|southern company|duke energy|entergy|coterra|diamondback|ovintiv|permian resources|civitas|chord energy|matador|sm energy|range resources|antero|eqt\\b|chesapeake|expand energy|southwestern energy|cnx\\b|continental resources|hilcorp|kinder morgan|energy transfer|enterprise products|williams (companies|partners|field services|midstream|production)|oneok|targa|plains (all american|marketing|pipeline)|western midstream|magellan|halliburton|schlumberger|slb\\b|baker hughes|nabors|helmerich|patterson-uti|liberty (energy|oilfield)|transocean|valaris|weatherford|cheniere|sempra|enbridge|tc energy|transcanada|phillips 66|valero|citgo|motiva|flint hills|koch (industries|pipeline|minerals)|berry corp|california resources|aera energy|"
     r"sinopec|cnooc|petronas|mitsui|ecopetrol)\b",
     re.I,
 )
