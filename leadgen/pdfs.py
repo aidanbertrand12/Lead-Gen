@@ -299,7 +299,7 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
     s.append(P("3. Upload the lead file", "h2"))
     s += bullets([
         "Upload <b>grok_leads.csv</b> to Google Drive, then open it with Google Sheets "
-        "(File → Save as Google Sheets). Name the sheet <b>GCGS Leads</b>.",
+        "(File → Save as Google Sheets). Name the sheet <b>GCGS Leads Sheet</b>.",
         "Leave the status, date_sent, follow_up_due and notes columns empty. Grok fills them in.",
     ])
     s.append(P("4. Create the agents (one Grok automation per job)", "h2"))
@@ -313,7 +313,7 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
     ])
     s.append(table([
         ["When", "Agent", "Why then"],
-        ["Now (warm-up weeks)", "1. Lead Verifier", "Sends no email. It cleans the CHECK rows while your inbox warms up."],
+        ["Now (warm-up weeks)", "1. Lead Verifier", "Sends no email. It checks the CHECK rows while your inbox warms up, and you paste its yes/no results into the sheet."],
         ["Week 3", "4. Reply Watcher", "Ready before anything goes out, so no reply is missed."],
         ["Week 3", "2. Email Sender, TEST MODE", "Saves 5 drafts. You read them and reply \"approved\"."],
         ["Week 4", "2. Email Sender (live) + 3. Follow-Up Agent", "Start at 10 per day. Raise to 20 after a clean week."],
@@ -327,7 +327,7 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
         "When they're good, reply <b>approved</b>.",
         "Tuesday to Thursday mornings get the best replies.",
     ])
-    s += checks(["Grok plan includes connectors + automations", "Drive connected", "GCGS Leads sheet uploaded",
+    s += checks(["Grok plan includes connectors + automations", "Drive connected", "GCGS Leads Sheet uploaded",
                  "Agent 1 (Lead Verifier) running", "Workspace Gmail connected (send on)", "Agent 4 on",
                  "Agent 2 test drafts approved", "Agents 2 + 3 live", "Agent 5 on"])
     s.append(PageBreak())
@@ -643,7 +643,8 @@ def build_agents_pdf(path: Path, sender: dict) -> None:
         "Replace every <b>[bracketed]</b> item in the prompts before pasting.",
         "Create each agent in its own new Grok chat so their instructions don't mix.",
         "<b>You</b> send every reply to an interested lead. The Reply Watcher only drafts.",
-        "To pause everything, type <b>PAUSED</b> at the start of row 1's notes cell. Delete it to resume.",
+        "To pause everything, type <b>PAUSED</b> at the start of cell T1 (the notes header). Delete it to resume.",
+        "Grok must never upload or replace files in your Drive. If it offers to, say no.",
         "Changing an agent: edit its prompt in that chat and ask Grok to update the automation.",
     ])
     for a in ags:
