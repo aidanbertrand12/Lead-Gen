@@ -130,9 +130,12 @@ send only enough to reach {daily} for the day.
 2. Go down the sheet in priority order (A, then B, then C), top to bottom, and pick rows where: status \
 is blank, email is not blank, site_verified = "yes", the email address does NOT appear anywhere in my Sent \
 folder, and nobody at that address or domain has emailed me.
-3. Write ONE personal email per company (rules below) and send it from my Gmail to the "email" column \
+3. Before writing each email, open the company's website and confirm it really is this company: name \
+matches, a US oil & gas / oilfield business, ideally the same city or state. Also confirm observation_1 is \
+still true. If anything doesn't match, skip the row and report it as "GCGS-xxxxx | skip | reason".
+4. Write ONE personal email per company (rules below) and send it from my Gmail to the "email" column \
 only. Never use backup_email.
-4. REPORT: one line per email sent, in this exact format so I can copy it into the sheet:
+5. REPORT: one line per email sent, in this exact format so I can copy it into the sheet:
 GCGS-00012 | sent | 11/24 | follow-up due 11/28
 Then list any rows you skipped and why.
 HARD LIMIT: never more than {daily} first emails in one day, even if I ask in a hurry.
