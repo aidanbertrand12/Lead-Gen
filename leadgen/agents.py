@@ -13,8 +13,8 @@ from .outreach import COMPANY
 
 STATUSES = [
     ("(blank)", "Not contacted yet", "Email Sender picks these up"),
-    ("sent", "First email sent (you paste from the Sender's report)", "Follow-Up Agent uses your Sent folder"),
-    ("followed up", "Follow-up sent. Nothing more goes out", "You paste from the Follow-Up report"),
+    ("sent", "First email sent (set by the Email Sender)", "Follow-Up Agent watches these"),
+    ("followed up", "Follow-up sent. Nothing more goes out", "Set by the Follow-Up Agent"),
     ("interested", "Wants to talk / asked a question", "YOU reply and book the call"),
     ("call booked", "Call is on the calendar", "You set this"),
     ("not now", "Asked to check back later", "Date goes in notes"),
@@ -30,18 +30,32 @@ You work for {COMPANY}, a company that modernizes websites and sets up AI system
 assistants, quote-request capture, and automated lead generation) for oil & gas companies across the US. \
 My name is {s['name']} ({s['title']}).
 
-THE LEAD SHEET (READ ONLY)
-Google Sheet "GCGS Leads Sheet" in my Google Drive (folder "GCGS Leads"). One row per company. Columns: \
-lead_id, priority, company, contact_name, contact_title, email, backup_email, phone, city, state, website, \
-business_type, site_verified, observation_1, observation_2, all_findings, status, date_sent, \
-follow_up_due, notes.
-You can READ this sheet but you cannot edit it. NEVER download, re-upload, copy, replace or create \
-files in my Google Drive. I update the sheet myself from your reports.
+THE LEAD SHEET
+Google Sheet "GCGS Leads Sheet" in my Google Drive (folder "GCGS Leads"). One row per company. Columns \
+A-T: lead_id, priority, company, contact_name, contact_title, email, backup_email, phone, city, state, \
+website, business_type, site_verified, observation_1, observation_2, all_findings, status, date_sent, \
+follow_up_due, notes. Columns U-Y (filled by the Lead Verifier): verify_reason, correct_website, \
+site_email, site_contact, how_sure.
+CORRECTED LEADS: if correct_website is filled and how_sure = "high", that row's original website, email \
+and observations were for the WRONG company. Use correct_website, site_email and site_contact instead, \
+and ignore observation_1, observation_2 and all_findings for that row.
+
+SHEET EDITING RULES (STRICT)
+- Edit cells directly through the Google Sheets connection. NEVER download, re-upload, copy, replace or \
+create files in my Google Drive.
+- Before writing, read row 1 and find the right column by its header name. Never assume a column letter.
+- Only edit the columns listed under "YOU MAY EDIT" for your job. Never touch any other column.
+- Never add, delete, move, sort or rename rows or columns. Never change row 1 (except the stop switch rule). \
+Color/formatting of the site_verified column is fine.
+- Find a lead's row by its lead_id, and double-check the company name in that row before writing.
+- In notes, ADD to the end of what's there, e.g. " | 11/24 verifier: site OK". Never erase existing notes.
+- If an edit fails or looks wrong, stop editing and tell me exactly what happened.
 
 MY GMAIL IS THE RECORD
 - Who has been emailed = my Gmail Sent folder. Before emailing anyone, search Sent for their address.
 - Who replied or said no = my Gmail inbox.
-- The sheet's status column is my own notes. Treat "do not contact" or "bounced" there as final.
+- The sheet's status column must match. If Gmail and the sheet disagree, trust Gmail and tell me. \
+Treat "do not contact" or "bounced" in either place as final.
 
 TEAM RULES (ALWAYS)
 - You are one of several agents. Only do YOUR job below.
@@ -99,7 +113,7 @@ def agents(s: dict) -> list[Agent]:
             1, "Lead Verifier", "01_lead_verifier.txt",
             "Every day at 7:00 AM Central", "Google Drive (read) + web browsing",
             "NOW, during inbox warm-up",
-            "Opens the websites of CHECK rows and reports yes/no for you to paste into the sheet.",
+            "Checks the websites of CHECK rows, marks yes/no in the sheet, and fixes wrong websites when it finds the real one.",
             f"""{ctx}
 
 YOUR JOB: LEAD VERIFIER (you never send email to leads)
@@ -110,7 +124,7 @@ For each one, open the website and decide if it really belongs to this company:
 (ideally the same state or city as the row).
 - It isn't a different company with a similar name, a parked "domain for sale" page, or a foreign company.
 Also check that observation_1 is still true on the site today.
-REPORT (this is your only output): one line per lead, in this exact format so I can copy it into the sheet:
+REPORT: one line per lead, in this exact format:
 GCGS-00436 | yes | reason in a few words | better email or contact name/title if you found one
 GCGS-00437 | no | different company: water well driller in TN |
 Use "down" instead of yes/no if the site won't load. If observation_1 is no longer true, say so in the reason.
@@ -128,14 +142,18 @@ YOUR JOB: EMAIL SENDER (first emails only)
 1. Count how many first emails (not replies, not follow-ups) are in my Sent folder from today. You may \
 send only enough to reach {daily} for the day.
 2. Go down the sheet in priority order (A, then B, then C), top to bottom, and pick rows where: status \
-is blank, email is not blank, site_verified = "yes", the email address does NOT appear anywhere in my Sent \
+is blank, email is not blank, site_verified = "yes", the email address (or site_email for corrected leads) does NOT appear anywhere in my Sent \
 folder, and nobody at that address or domain has emailed me.
-3. Before writing each email, open the company's website and confirm it really is this company: name \
+3. For CORRECTED LEADS (see above), send to site_email and greet site_contact's first name if the email \
+is theirs (otherwise "Hi {{company}} team,"). For sentence 1, mention one thing you can actually see on \
+correct_website that a modern site would improve (e.g. no quote form, no way to reach them after hours, \
+not built for phones). If you can't find a real, specific issue, skip the row and say why.
+   Before writing each email, open the website you're using and confirm it really is this company: name \
 matches, a US oil & gas / oilfield business, ideally the same city or state. Also confirm observation_1 is \
 still true. If anything doesn't match, skip the row and report it as "GCGS-xxxxx | skip | reason".
 4. Write ONE personal email per company (rules below) and send it from my Gmail to the "email" column \
-only. Never use backup_email.
-5. REPORT: one line per email sent, in this exact format so I can copy it into the sheet:
+(or site_email for corrected leads) only. Never use backup_email.
+5. REPORT: one line per email sent, in this exact format:
 GCGS-00012 | sent | 11/24 | follow-up due 11/28
 Then list any rows you skipped and why.
 HARD LIMIT: never more than {daily} first emails in one day, even if I ask in a hurry.
@@ -222,7 +240,7 @@ def more_agents(s: dict) -> list[Agent]:
             "Now", "Finds websites and public emails for companies on the 11,000-company call list.",
             f"""{ctx}
 
-EXTRA SHEET (READ ONLY): "GCGS Call List" in the same folder. Columns: company, business_type, \
+EXTRA SHEET: "GCGS Call List" in the same folder. Columns: company, business_type, \
 contact_name, contact_title, other_officers, phone, website, email, address, city, state, zip, source, \
 status, notes.
 
@@ -373,8 +391,40 @@ contact, what they said.
     ]
 
 
+EDIT_RULES = {
+    1: """YOU MAY EDIT (GCGS Leads Sheet): site_verified, verify_reason, correct_website, site_email, \
+site_contact, how_sure, notes. Never change website, email, contact_name or any other original column.
+WRITE YOUR RESULTS into the sheet, then post the summary as well:
+- Before writing a row, check site_verified still says "CHECK". If I changed it, skip that row.
+- yes: site_verified = "yes", reason in verify_reason.
+- no: site_verified = "no", reason in verify_reason. If you found the company's real website, put it in \
+correct_website, any email printed on it in site_email, the owner/president/manager with title in \
+site_contact, and high/medium in how_sure. If the real site is HIGH confidence AND has a printed email, \
+set site_verified = "yes" instead (the Email Sender will use the corrected columns).
+- down: leave "CHECK", put "site down" in verify_reason.""",
+    2: """YOU MAY EDIT (GCGS Leads Sheet): status, date_sent, follow_up_due, notes.
+After each email is sent: status = "sent", date_sent = today (MM/DD/YYYY), follow_up_due = 4 business days \
+later. For a skipped row, add the reason to notes. Never change site_verified.""",
+    3: """YOU MAY EDIT (GCGS Leads Sheet): status, notes.
+After each follow-up is sent: status = "followed up".""",
+    4: """YOU MAY EDIT (GCGS Leads Sheet): status, notes.
+Set status to interested / not now / wrong person / do not contact / bounced as you sort each reply, \
+and add the one-line summary to notes. For out-of-office, add the return date to notes only.""",
+    5: """YOU MAY EDIT (GCGS Leads Sheet): only cell T1, and only to add the stop switch: if the safety rule \
+triggers, change T1 to "PAUSED - <date> - <reason> | notes". Never remove PAUSED yourself; I do that.""",
+    6: """YOU MAY EDIT (GCGS Call List): website, email, contact_name, contact_title, status, notes.
+For each company you research: set status = "researched". Fill website/email/contact only with HIGH \
+confidence finds (name AND location match, email printed on the site). Put medium finds in notes. \
+Never edit the GCGS Leads Sheet.""",
+}
+_NO_EDIT = """YOU MAY EDIT: nothing. You only read the sheets. Never change any cell in any sheet."""
+
+
 def all_agents(s: dict) -> list[Agent]:
-    return agents(s) + more_agents(s)
+    out = agents(s) + more_agents(s)
+    for a in out:
+        a.prompt += "\n\n" + EDIT_RULES.get(a.num, _NO_EDIT)
+    return out
 
 
 def write_agent_files(s: dict, out_dir: Path) -> list[Agent]:

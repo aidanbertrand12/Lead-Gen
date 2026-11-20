@@ -642,10 +642,15 @@ def build_agents_pdf(path: Path, sender: dict) -> None:
                "Only agents 2 and 3 ever send email to leads. Every other agent reports to you.", "small"))
     s.append(PageBreak())
     s.append(P("How the agents hand off work", "h2"))
-    s.append(P("Agents never message each other. Each one reads and updates the <b>status</b> column of the "
-               "GCGS Leads sheet, and that column is the hand-off. The Email Sender only touches blank rows, the "
-               "Follow-Up Agent only touches \"sent\" rows, and the Reply Watcher moves anyone who answers out of "
-               "both lists. The Weekly Report can stop sending by writing PAUSED in row 1's notes."))
+    s.append(P("Agents never message each other. They edit the <b>GCGS Leads Sheet</b> and <b>GCGS Call List</b> "
+               "directly, but each may only change the columns its job lists, and none may delete or re-upload "
+               "anything. The <b>status</b> column is the hand-off: the Email Sender only takes blank rows, the "
+               "Follow-Up Agent only takes \"sent\" rows, and the Reply Watcher moves anyone who answers out of both "
+               "lists. Your <b>Gmail is the backup record</b>: agents check Sent and the inbox before every email, "
+               "so nobody is emailed twice. The Lead Verifier writes its findings in columns U-Y (verify_reason, "
+               "correct_website, site_email, site_contact, how_sure) and never overwrites the original website or "
+               "email. To stop all sending, type <b>PAUSED</b> at the start of cell T1. If an edit ever looks wrong, "
+               "use <b>File → Version history</b> to restore an earlier copy."))
     s.append(table([["Status", "Meaning", "Who acts"]] + [list(x) for x in STATUSES],
                    [1.3 * inch, 3.0 * inch, 2.7 * inch]))
     s.append(P("Rules for you", "h2"))
