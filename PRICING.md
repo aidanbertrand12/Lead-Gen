@@ -1,4 +1,4 @@
-# Gulf Coast Energy AI Growth Package — $35,000
+# Gulf Coast Growth Systems — AI Growth Package ($35,000)
 
 For: independent E&P operators and oilfield service companies on the Gulf Coast
 (TX, LA, MS, AL, FL), typically 20–500 employees, with an outdated website and

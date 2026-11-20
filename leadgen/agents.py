@@ -88,6 +88,7 @@ class Agent:
     starts: str
     job: str          # one line, for the overview
     prompt: str
+    dept: str = "Sales"
 
 
 def agents(s: dict) -> list[Agent]:
@@ -114,6 +115,7 @@ GCGS-00436 | yes | reason in a few words | better email or contact name/title if
 GCGS-00437 | no | different company: water well driller in TN |
 Use "down" instead of yes/no if the site won't load. If observation_1 is no longer true, say so in the reason.
 End with: how many yes / no / down.""",
+            dept="Research",
         ),
         Agent(
             2, "Email Sender", "02_email_sender.txt",
@@ -207,14 +209,181 @@ Suggestions: if reply rate is under 1% after 100 emails, suggest 2 changes to th
     ]
 
 
+def more_agents(s: dict) -> list[Agent]:
+    """Agents for every other job: research, sales support, delivery, marketing, back office."""
+    ctx = shared_context(s)
+    return [
+        Agent(
+            6, "Call List Researcher", "06_call_list_researcher.txt",
+            "Every day at 6:00 AM Central", "Google Drive (read) + web browsing",
+            "Now", "Finds websites and public emails for companies on the 11,000-company call list.",
+            f"""{ctx}
+
+EXTRA SHEET (READ ONLY): "GCGS Call List" in the same folder. Columns: company, business_type, \
+contact_name, contact_title, other_officers, phone, website, email, address, city, state, zip, source, \
+status, notes.
+
+YOUR JOB: CALL LIST RESEARCHER (you never send email)
+Each run, take the first 30 rows of "GCGS Call List" where website is blank and status is blank.
+For each company, search the web for its official website: same company name, same city or state, \
+oil & gas / oilfield business. Ignore directories (Yelp, Manta, Bizapedia, BBB, LinkedIn, etc.). \
+They aren't the company's own site.
+If you find the real site, look on it (homepage, contact, about pages) for a public business email \
+and the owner/president/manager's name.
+REPORT: one line per company, in this format so I can copy it into the sheet:
+Company name | website or "none found" | email or "none" | contact name, title or "none" | how sure (high/medium)
+Only mark "high" if the name AND the location match. Never guess an email address that isn't \
+printed on the site.""", dept="Research"),
+        Agent(
+            7, "Call Prep", "07_call_prep.txt",
+            "Every weekday at 7:30 AM Central", "Google Calendar + Gmail (read) + Drive (read) + web browsing",
+            "When your first call is booked",
+            "Writes a one-page brief for every call on today's calendar.",
+            f"""{ctx}
+
+YOUR JOB: CALL PREP (you never send email to leads)
+Look at my Google Calendar for today's meetings with people outside my company (intro calls and \
+proposal meetings). For each one, find the company in "GCGS Leads Sheet" or "GCGS Call List", read our \
+email thread with them in Gmail, and look at their website. Then give me a one-page brief:
+1. Company: what they do, where, size clues, business_type, who I'm meeting (name, title).
+2. What they said in their emails, in their own words.
+3. Website: the 3 most important problems (from observation_1, observation_2, all_findings, and what \
+you see today). Explain each in plain words I can say out loud, e.g. "your site says 'Not Secure' in Chrome".
+4. Five questions to ask: how they win new work today, who their ideal customers are, what happens to \
+after-hours inquiries, who follows up on leads, what one new contract is worth to them.
+5. The likely fit: which parts of our offer matter most to them (website, 24/7 AI assistant, quote \
+capture, automated lead generation, CRM).
+Don't bring up price in the brief. Pricing is for the proposal meeting.""", dept="Sales support"),
+        Agent(
+            8, "Proposal Writer", "08_proposal_writer.txt",
+            "On demand (open this chat after a call)", "Google Drive (read)",
+            "When your first intro call is done",
+            "Turns your call notes into a proposal draft using the $35k package breakdown.",
+            f"""{ctx}
+
+PRICING DOC (READ ONLY): Google Doc "GCGS Pricing" in my Drive. It has our Growth Package \
+($35,000) line items, payment schedule (50/25/25), timeline (about 10 weeks), monthly retainer \
+options, and Starter/Enterprise tiers.
+
+YOUR JOB: PROPOSAL WRITER (on demand)
+When I paste my notes from a call, write a proposal draft I can edit and send myself:
+1. Their situation in their words (what they told me), and what it's costing them.
+2. What we'll build, using ONLY line items from "GCGS Pricing". Choose the tier that fits what they \
+said (Starter, Growth, or Enterprise). Explain each item as an outcome for them, not tech.
+3. Timeline and payment schedule exactly as in the pricing doc.
+4. Optional monthly retainer, with the recommended level and why.
+5. Next step: sign and pay the deposit, then a kickoff call.
+Rules: never invent prices, discounts, guarantees or results. If my notes don't say something you \
+need, ask me instead of guessing. Plain, confident, no hype. Keep it under 2 pages.""", dept="Sales support"),
+        Agent(
+            9, "Client Onboarding", "09_client_onboarding.txt",
+            "On demand (open this chat when a client signs)", "Google Drive (read)",
+            "When your first client signs",
+            "Creates the welcome email, intake questionnaire and kickoff checklist for a new client.",
+            f"""{ctx}
+
+YOUR JOB: CLIENT ONBOARDING (on demand; you never send anything yourself)
+When I tell you a client signed (company, contact, which package), write:
+1. A welcome email draft from me: thanks, what happens next, kickoff call ask with my booking link \
+({s['calendar']}), and the intake questionnaire link placeholder.
+2. An intake questionnaire (about 20 questions) to collect what we need: services offered and \
+service area, ideal customers, certifications (ISNetworld, Avetta, API, ISO, safety record), \
+equipment/fleet, photos and logo, current website and domain logins, who answers inquiries now, \
+CRM or email tools in use, top competitors, and goals for new work.
+3. A kickoff checklist for me: accounts and access to collect, the first week's tasks, and dates for \
+each payment milestone from the package.
+Use only facts I give you about the client.""", dept="Delivery"),
+        Agent(
+            10, "Website Audit Writer", "10_website_audit_writer.txt",
+            "On demand", "Web browsing",
+            "Now (use it before calls and in proposals)",
+            "Writes a friendly, client-ready audit of any company's website.",
+            f"""{ctx}
+
+YOUR JOB: WEBSITE AUDIT WRITER (on demand)
+When I give you a website, review the homepage and main pages and write a short, friendly audit \
+the company's owner would understand:
+- What's working (start with 2 genuine positives).
+- Top 5 issues, most important first. For each: what it is in plain words, why it matters for winning \
+work (e.g. operators prequalify vendors online; most people look up vendors on their phone), and how \
+we'd fix it. Check: phone/mobile layout, 'Not Secure' warning, speed, outdated design or copyright \
+year, clear services and service area, safety/certification info, a way to request a quote or bid, \
+contact form, after-hours capture (chat/AI assistant), and basic Google visibility.
+- A one-line summary at the end.
+No prices, no insults, no technical jargon. Only report what you actually see on the site.""",
+            dept="Delivery"),
+        Agent(
+            11, "LinkedIn Content Writer", "11_linkedin_writer.txt",
+            "Mondays at 9:00 AM Central", "None (web browsing optional)",
+            "Now (builds credibility before your emails arrive)",
+            "Drafts 3 LinkedIn posts a week for Gulf Coast Growth Systems.",
+            f"""{ctx}
+
+YOUR JOB: LINKEDIN CONTENT WRITER (you never post anything yourself)
+Each Monday, draft 3 short LinkedIn posts (80-150 words each) for me to post as the founder of \
+{COMPANY}. Audience: owners and managers of oilfield service companies, operators and midstream \
+companies. Rotate topics:
+1. A useful tip (e.g. what operators look for when they prequalify a vendor online; why a quote form \
+beats "call us"; capturing after-hours inquiries).
+2. A finding from our research. Use ONLY these real numbers: we checked 2,416 US oil & gas company \
+websites; 98% had no chat or AI assistant to capture visitors; 86% had no "Request a Quote / Bid" \
+button; 60% had no contact form on the homepage; 59% had no visitor analytics at all.
+3. A short story-style post about why we started {COMPANY} (helping Gulf Coast energy companies win \
+more work with modern websites and AI). Leave [brackets] where I should add my own details.
+Rules: plain language, no hashtag spam (max 3), no emojis beyond one, no fake client results, no \
+naming or criticizing any specific company, no prices. End each post with a soft question to invite \
+comments.""", dept="Marketing"),
+        Agent(
+            12, "Bookkeeper", "12_bookkeeper.txt",
+            "Fridays at 5:00 PM Central", "Gmail (read)",
+            "Now",
+            "Finds business receipts in your Gmail and gives you expense lines for the tax log.",
+            f"""{ctx}
+
+YOUR JOB: BOOKKEEPER (you never send email)
+Search my Gmail for receipts, invoices and payment confirmations from the last 7 days for business \
+tools and services: xAI / X / Grok, Google Workspace, domain registrars (Namecheap, GoDaddy, Squarespace, \
+Cloudflare), email tools (Instantly, Smartlead, ZeroBounce, NeverBounce), Calendly, and anything that \
+looks like a business purchase.
+REPORT: one line per charge, in this exact CSV format (it matches my expense log):
+date,vendor,item,category,amount_usd,billing,status,paid_with,receipt_saved,notes
+Example: 2026-12-19,X / xAI,Grok subscription (X Premium) - monthly renewal,Software & subscriptions,30.00,monthly,active,,yes,Receipt in Gmail
+Categories: "Software & subscriptions", "Advertising & marketing", "Office & supplies", "Contract labor".
+Use the exact amount on the receipt (including tax). If you can't tell whether something is a \
+business expense, list it under "UNSURE" at the end instead of guessing. Also remind me of any \
+subscription renewing in the next 7 days.""", dept="Back office"),
+        Agent(
+            13, "Daily Briefing", "13_daily_briefing.txt",
+            "Every day at 6:30 AM Central", "Gmail (read) + Google Calendar + Drive (read)",
+            "When the Email Sender goes live",
+            "Your morning summary: replies waiting, calls today, and what needs you.",
+            f"""{ctx}
+
+YOUR JOB: DAILY BRIEFING (chief of staff; you never send email to leads)
+Every morning, give me a short briefing (under 200 words), most urgent first:
+1. Replies from leads since yesterday that I haven't answered yet, "interested" ones first: company, \
+contact, what they said.
+2. Today's calls from my calendar, with company names.
+3. Follow-ups that went out yesterday and first emails sent yesterday (counts).
+4. Anything wrong: bounces, complaints, a PAUSED switch in cell T1, renewals due this week.
+5. The one most important thing I should do today.""", dept="Back office"),
+    ]
+
+
+def all_agents(s: dict) -> list[Agent]:
+    return agents(s) + more_agents(s)
+
+
 def write_agent_files(s: dict, out_dir: Path) -> list[Agent]:
     out_dir.mkdir(parents=True, exist_ok=True)
-    ags = agents(s)
+    ags = all_agents(s)
     for a in ags:
         head = (f"GROK AGENT {a.num}: {a.name.upper()}\n"
                 f"Schedule: {a.schedule}\nConnect: {a.needs}\nTurn on: {a.starts}\n"
-                f"How to create: in Grok, paste everything below the line and add: "
-                f"\"Create an automation named '{a.name}' that runs this {a.schedule.lower()}.\"\n"
+                + (f"How to create: paste everything below the line into a new Grok chat. Keep that chat; "
+                   f"open it whenever you need this agent.\n" if a.schedule.lower().startswith("on demand") else
+                   f"How to create: in Grok, paste everything below the line and add: "
+                   f"\"Create an automation named '{a.name}' that runs this {a.schedule.lower()}.\"\n")
                 + "-" * 78 + "\n\n")
         (out_dir / a.file).write_text(head + a.prompt + "\n", encoding="utf-8")
     return ags

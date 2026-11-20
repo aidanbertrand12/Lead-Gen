@@ -16,7 +16,7 @@ from reportlab.platypus import (CondPageBreak, KeepTogether, PageBreak, Paragrap
                                 SimpleDocTemplate, Spacer, Table, TableStyle)
 
 from .models import Company
-from .agents import STATUSES, agents
+from .agents import STATUSES, agents, all_agents
 from .outreach import COMPANY, OutreachRow, _display_name, build_rows, business_type
 
 FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
@@ -544,12 +544,12 @@ def build_lead_book(path: Path, companies: list[Company], sender: dict) -> dict:
     s.append(PageBreak())
 
     s.append(P("The Grok agents", "h1"))
-    s.append(P("Grok works as five separate agents, each a scheduled automation with one job. They coordinate "
-               "through the <b>GCGS Leads</b> Google Sheet (upload <b>grok_leads.csv</b> and save it as a Google "
-               "Sheet). Full prompts are in <b>GCGS_Grok_Agents.pdf</b> and the <b>agents</b> folder. Emails never "
+    s.append(P("Grok works as a team of agents, one job each. They read the <b>GCGS Leads Sheet</b> (upload "
+               "<b>grok_leads.csv</b> and save it as a Google Sheet) and use your Gmail as the record of who's been "
+               "emailed. Full prompts are in <b>GCGS_Grok_Agents.pdf</b> and the <b>agents</b> folder. Emails never "
                "mention price. They ask for a 15-minute call."))
     s.append(table([["#", "Agent", "Job", "Schedule"]] +
-                   [[str(a.num), a.name, a.job, a.schedule] for a in agents(sender)],
+                   [[str(a.num), a.name, a.job, a.schedule.split(" (")[0]] for a in all_agents(sender)],
                    [0.3 * inch, 1.3 * inch, 3.3 * inch, 2.1 * inch]))
     s.append(Spacer(1, 8))
     s.append(P("Example of the kind of email this produces", "h2"))
@@ -624,13 +624,23 @@ def build_lead_book(path: Path, companies: list[Company], sender: dict) -> dict:
 
 
 def build_agents_pdf(path: Path, sender: dict) -> None:
-    ags = agents(sender)
-    s = [Spacer(1, 1.0 * inch), P(COMPANY, "subtitle"), P("Grok Agent Playbook", "title"), Spacer(1, 6),
-         P("Five Grok agents, one job each, working from one shared Google Sheet.", "subtitle"),
-         Spacer(1, 0.3 * inch)]
-    s.append(table([["#", "Agent", "Job", "Connect", "Turn on"]] +
-                   [[str(a.num), a.name, a.job, a.needs, a.starts] for a in ags],
-                   [0.3 * inch, 1.15 * inch, 2.35 * inch, 1.65 * inch, 1.55 * inch]))
+    ags = all_agents(sender)
+    s = [Spacer(1, 0.6 * inch), P(COMPANY, "subtitle"), P("Grok Agent Playbook", "title"), Spacer(1, 6),
+         P(f"{len(ags)} Grok agents, one job each, like employees. Scheduled agents run automatically. "
+           "On-demand agents are saved chats you open when you need them.", "subtitle"),
+         Spacer(1, 0.2 * inch)]
+    s.append(table([["#", "Dept", "Agent", "Job", "Runs", "Turn on"]] +
+                   [[str(a.num), a.dept, a.name, a.job, a.schedule.split(" (")[0], a.starts] for a in ags],
+                   [0.3 * inch, 0.85 * inch, 1.1 * inch, 2.25 * inch, 1.25 * inch, 1.25 * inch]))
+    s.append(P("Files the agents read (upload to the GCGS Leads folder, then open each with Google Sheets/Docs)", "h2"))
+    s.append(table([["File you upload", "Name it", "Used by"],
+                    ["grok_leads.csv", "GCGS Leads Sheet", "Agents 1-5, 7, 13"],
+                    ["call_list.csv", "GCGS Call List", "Agents 6, 7"],
+                    ["GCGS_Pricing.docx", "GCGS Pricing", "Agent 8"]],
+                   [2.0 * inch, 2.0 * inch, 3.0 * inch]))
+    s.append(P("Connectors: Google Drive (read), Gmail, Google Calendar (for Call Prep and Daily Briefing). "
+               "Only agents 2 and 3 ever send email to leads. Every other agent reports to you.", "small"))
+    s.append(PageBreak())
     s.append(P("How the agents hand off work", "h2"))
     s.append(P("Agents never message each other. Each one reads and updates the <b>status</b> column of the "
                "GCGS Leads sheet, and that column is the hand-off. The Email Sender only touches blank rows, the "
