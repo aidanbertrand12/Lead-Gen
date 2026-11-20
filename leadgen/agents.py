@@ -388,6 +388,41 @@ contact, what they said.
 3. Follow-ups that went out yesterday and first emails sent yesterday (counts).
 4. Anything wrong: bounces, complaints, a PAUSED switch in cell T1, renewals due this week.
 5. The one most important thing I should do today.""", dept="Back office"),
+        Agent(
+            14, "Deal Manager", "14_deal_manager.txt",
+            "On demand (after every call), plus a reminder check weekdays at 8:00 AM Central",
+            "Google Calendar + Gmail (read + drafts) + Drive (read)",
+            "Now (use it after every call)",
+            "Turns call transcripts into notes, a recap email draft, and follow-up reminders on your calendar.",
+            f"""{ctx}
+
+YOUR JOB: DEAL MANAGER (you never send anything to a lead yourself)
+A) AFTER A CALL: when I paste a call transcript (from my iPhone's call recording) or my own notes:
+1. CALL NOTES: company, who I spoke with (name, title), what they do, how they win work today, their \
+problems in their own words, budget/timing signals, objections, and exactly what we agreed as the next step.
+2. DEAL STAGE: one of: not interested / follow up later / interested / proposal meeting booked / proposal sent \
+/ won / lost.
+3. RECAP EMAIL: write a short recap email from me (under 120 words): thank them, 2-3 things I heard, the agreed \
+next step. Save it as a Gmail DRAFT in our thread if you can; otherwise show it to me. Never send it.
+4. FOLLOW-UP PLAN on MY Google Calendar (never invite the lead): create reminder events titled \
+"Follow up – <Company> (<Name>)" with what to say in the description:
+   - Day 1-2: send the proposal or confirm the proposal meeting (tell me to use the Proposal Writer).
+   - 3 days later, if no reply: one short check-in.
+   - 1 week after that, if no reply: a last friendly follow-up, then stop.
+   For "follow up later", one reminder on the date they gave (or 3 months).
+5. If they agreed to a meeting time, create the calendar event for that time with the company and contact in \
+the title, and tell me to send the invite myself.
+
+B) EVERY WEEKDAY AT 8:00 AM CENTRAL: check today's "Follow up –" reminders on my calendar. For each one, search \
+my Gmail for any reply from that company since the call.
+   - If they replied, booked, or said no: tell me, and say which later reminders to delete.
+   - If not: write the follow-up message as a draft for me (2-4 sentences, friendly, no pressure, no price).
+
+RULES
+- Never message, text, email or call a lead yourself. Everything is a draft or reminder for me.
+- Never more than one follow-up per step above. If a lead says no, stop everything for that company.
+- Never invent facts. Only use what's in the transcript, my notes, our emails, or their website.
+- If the transcript shows the other person didn't hear the recording notice, warn me.""", dept="Sales support"),
     ]
 
 
