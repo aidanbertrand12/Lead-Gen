@@ -1,4 +1,4 @@
-"""Printable PDFs for Gulf Coast Systems: the setup guide and the lead book."""
+"""Printable PDFs for Gulf Coast Growth Systems: the setup guide and the lead book."""
 from __future__ import annotations
 
 import datetime as dt
@@ -16,7 +16,8 @@ from reportlab.platypus import (CondPageBreak, KeepTogether, PageBreak, Paragrap
                                 SimpleDocTemplate, Spacer, Table, TableStyle)
 
 from .models import Company
-from .outreach import COMPANY, OutreachRow, _display_name, build_rows, business_type, grok_prompt
+from .agents import STATUSES, agents
+from .outreach import COMPANY, OutreachRow, _display_name, build_rows, business_type
 
 FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
 pdfmetrics.registerFont(TTFont("Sans", str(FONT_DIR / "DejaVuSans.ttf")))
@@ -145,11 +146,11 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
     s.append(Spacer(1, 0.25 * inch))
     s.append(P("<b>Files that go with this guide</b>", "body"))
     s += bullets([
-        "<b>GCS_Lead_Book.pdf</b>: every lead with contact info, website findings and talking points, "
+        "<b>GCGS_Lead_Book.pdf</b>: every lead with contact info, website findings and talking points, "
         "plus the Grok prompt. Print it and use it as your call sheet.",
         "<b>grok_leads.csv</b>: the lead file you upload to Google Drive for Grok (one row per company "
         "that has an email).",
-        "<b>grok_prompt.txt</b>: the same prompt as in the lead book, ready to copy and paste.",
+        "<b>GCGS_Grok_Agents.pdf</b> + <b>agents</b> folder: the five Grok agent prompts, ready to paste.",
         "<b>call_list.csv</b>: every company with a phone number and (usually) a named officer, for calling.",
     ])
     s.append(PageBreak())
@@ -199,8 +200,8 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
                "Buy a second, similar domain just for cold outreach. If that one ever gets flagged, your main "
                "domain and its inbox aren't affected."))
     s += bullets([
-        "Pick something that clearly reads as your company, for example <b>gulfcoastsystems.co</b>, "
-        "<b>getgulfcoastsystems.com</b>, <b>gulfcoastsystemsllc.com</b> or <b>gulfcoast-systems.com</b>. "
+        "Pick something that clearly reads as your company, for example <b>gulfcoastgrowthsystems.com</b>, "
+        "<b>getgulfcoastgrowth.com</b>, <b>gulfcoastgrowthsystems.co</b> or <b>gulfcoastgrowth.com</b>. "
         "Check which ones are available.",
         "Use <b>.com</b> if you can, otherwise .co or .net. Avoid odd endings like .xyz or .info, which spam filters distrust.",
         "Set the new domain to <b>forward to your main website</b>, so anyone who types it in lands on your real site.",
@@ -283,8 +284,10 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
     # Step 7 Grok
     s.append(P("Step 7: Set up Grok", "h1"))
     s.append(P("1. Subscribe", "h2"))
-    s += bullets(["Get the <b>Premium</b> plan of The X Subscription ($30/month). This includes Grok Bot, "
-                  "automations and connectors. You don't need Super or Ultra for this volume."])
+    s += bullets(["You need a plan that includes <b>connectors</b> (Gmail + Drive) and <b>scheduled automations</b>. "
+                  "Per xAI's plan list, that's Premium of The X Subscription (about $30/month) or a legacy "
+                  "SuperGrok plan. Check in Grok's settings that Connectors and Automations are available "
+                  "on your account."])
     s.append(P("2. Connect your accounts", "h2"))
     s += bullets([
         "In Grok, open <b>Settings → Connectors</b>. Connect <b>Gmail</b> using your new <b>outreach inbox</b>, "
@@ -296,34 +299,37 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
     s.append(P("3. Upload the lead file", "h2"))
     s += bullets([
         "Upload <b>grok_leads.csv</b> to Google Drive, then open it with Google Sheets "
-        "(File → Save as Google Sheets). Name the sheet <b>GCS Leads</b>.",
+        "(File → Save as Google Sheets). Name the sheet <b>GCGS Leads</b>.",
         "Leave the status, date_sent, follow_up_due and notes columns empty. Grok fills them in.",
     ])
-    s.append(P("4. Fill in your details and paste the prompt", "h2"))
+    s.append(P("4. Create the agents (one Grok automation per job)", "h2"))
     s += bullets([
-        "Open <b>grok_prompt.txt</b> (also printed in the lead book). Replace every <b>[bracketed]</b> item: "
-        "your name, title, phone, business mailing address and booking link.",
-        "The mailing address is required by law (CAN-SPAM). A PO box or registered business address is fine.",
-        "Paste the prompt into Grok and add: <i>\"Run this now in TEST MODE.\"</i>",
+        "Open <b>GCGS_Grok_Agents.pdf</b> (or the <b>agents</b> folder of text files). Replace every "
+        "<b>[bracketed]</b> item: your name, title, phone, business mailing address and booking link. "
+        "The mailing address is required by law (CAN-SPAM). A PO box is fine.",
+        "Create each agent in a <b>new Grok chat</b>: paste its prompt, then ask Grok to make it an automation "
+        "with the schedule shown at the top of the file.",
+        "Turn them on in this order:",
     ])
+    s.append(table([
+        ["When", "Agent", "Why then"],
+        ["Now (warm-up weeks)", "1. Lead Verifier", "Sends no email. It cleans the CHECK rows while your inbox warms up."],
+        ["Week 3", "4. Reply Watcher", "Ready before anything goes out, so no reply is missed."],
+        ["Week 3", "2. Email Sender, TEST MODE", "Saves 5 drafts. You read them and reply \"approved\"."],
+        ["Week 4", "2. Email Sender (live) + 3. Follow-Up Agent", "Start at 10 per day. Raise to 20 after a clean week."],
+        ["End of week 4", "5. Weekly Report", "Numbers every Friday, and an automatic pause if bounces get too high."],
+    ], [1.5 * inch, 2.3 * inch, 3.2 * inch]))
     s.append(P("5. Test mode (do not skip)", "h2"))
     s += bullets([
-        "Grok saves 5 emails as Gmail drafts instead of sending. Read every one. Check the names, that the "
-        "website observations are accurate (open their site), that there's no price mentioned, and that the "
-        "signature and footer are right.",
-        "If something's off, tell Grok what to change (\"shorter\", \"less formal\", \"don't mention "
-        "analytics\") and run test mode again.",
+        "The Email Sender's first run saves 5 emails as Gmail drafts instead of sending. Read every one: names, "
+        "that the website observations are true (open their site), no price mentioned, signature and footer right.",
+        "If something's off, tell it what to change (\"shorter\", \"less formal\") and run test mode again. "
         "When they're good, reply <b>approved</b>.",
+        "Tuesday to Thursday mornings get the best replies.",
     ])
-    s.append(P("6. Turn on the automation", "h2"))
-    s += bullets([
-        "Tell Grok: <i>\"Create an automation that runs this every weekday at 8:30 AM Central.\"</i>",
-        "Start with <b>10 per day</b> (the prompt's limit). After a clean first week, edit the prompt's daily "
-        "number to 20.",
-        "Tuesday to Thursday mornings get the best replies. Monday and Friday are fine but slower.",
-    ])
-    s += checks(["Premium plan active", "Gmail (send) + Drive connected", "GCS Leads sheet uploaded",
-                 "Prompt filled in", "Test drafts reviewed + approved", "Weekday automation on"])
+    s += checks(["Grok plan includes connectors + automations", "Drive connected", "GCGS Leads sheet uploaded",
+                 "Agent 1 (Lead Verifier) running", "Workspace Gmail connected (send on)", "Agent 4 on",
+                 "Agent 2 test drafts approved", "Agents 2 + 3 live", "Agent 5 on"])
     s.append(PageBreak())
 
     # Step 8 daily routine
@@ -331,7 +337,7 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
     s += checks([
         "Read Grok's daily summary (how many sent, any replies).",
         "Open your outreach inbox. <b>Answer every interested reply within 1 hour</b> if you can. Speed wins meetings.",
-        "Check the GCS Leads sheet: anything marked bounced, do not contact, or with a note from Grok.",
+        "Check the GCGS Leads sheet: anything marked bounced, do not contact, or with a note from Grok.",
         "Write down calls booked and outcomes in the lead book (each lead has checkboxes).",
         "Once a week: check bounce rate and replies (see the scorecard below).",
     ])
@@ -385,7 +391,7 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
     s += bullets([
         "<b>CAN-SPAM (US law):</b> honest From name and subject line, your physical mailing address in every "
         "email, a clear way to opt out, and honor opt-outs right away (within 10 business days at most). "
-        "The Grok prompt handles all of this. Don't remove the footer.",
+        "The Grok agents handle all of this. Don't remove the footer.",
         "<b>One recipient per email.</b> No CC/BCC blasts, no attachments, no tracking pixels.",
         "<b>Volume limits:</b> Google Workspace allows about 2,000 emails/day, but that's not a safe cold-email "
         "number. Stay at 10-20 (max 30) cold emails per inbox per day.",
@@ -397,7 +403,7 @@ def build_setup_guide(path: Path, stats: dict, sender: dict) -> None:
     s.append(table([
         ["Problem", "Fix"],
         ["Grok says it can't send email", "Reconnect Gmail in Settings → Connectors and make sure send permission is on."],
-        ["Grok can't find the sheet", "Make sure it's a Google Sheet (not just a CSV) named GCS Leads, in the same "
+        ["Grok can't find the sheet", "Make sure it's a Google Sheet (not just a CSV) named GCGS Leads, in the same "
                                       "Google account that's connected."],
         ["Emails landing in spam", "Check SPF/DKIM/DMARC pass, slow to 10/day, keep warm-up running, remove links "
                                    "except the booking link."],
@@ -537,12 +543,14 @@ def build_lead_book(path: Path, companies: list[Company], sender: dict) -> dict:
     ]))
     s.append(PageBreak())
 
-    s.append(P("The Grok prompt", "h1"))
-    s.append(P("Upload <b>grok_leads.csv</b> to Google Drive as a Google Sheet named <b>GCS Leads</b>, connect "
-               "Gmail (send on) and Drive in Grok, replace the <b>[bracketed]</b> items with your details, and paste "
-               "this in. The same text is in <b>grok_prompt.txt</b>. The email never mentions price. "
-               "It asks for a 15-minute call."))
-    s.append(Preformatted(grok_prompt(sender), ST["monobox"], maxLineLength=100))
+    s.append(P("The Grok agents", "h1"))
+    s.append(P("Grok works as five separate agents, each a scheduled automation with one job. They coordinate "
+               "through the <b>GCGS Leads</b> Google Sheet (upload <b>grok_leads.csv</b> and save it as a Google "
+               "Sheet). Full prompts are in <b>GCGS_Grok_Agents.pdf</b> and the <b>agents</b> folder. Emails never "
+               "mention price. They ask for a 15-minute call."))
+    s.append(table([["#", "Agent", "Job", "Schedule"]] +
+                   [[str(a.num), a.name, a.job, a.schedule] for a in agents(sender)],
+                   [0.3 * inch, 1.3 * inch, 3.3 * inch, 2.1 * inch]))
     s.append(Spacer(1, 8))
     s.append(P("Example of the kind of email this produces", "h2"))
     ex = next((r for r in ready if r.contact_name), ready[0] if ready else None)
@@ -613,3 +621,38 @@ def build_lead_book(path: Path, companies: list[Company], sender: dict) -> dict:
     doc = _doc(path, f"{COMPANY} - US Oil & Gas Lead Book")
     doc.build(s, onFirstPage=_page_deco("Lead Book"), onLaterPages=_page_deco("Lead Book"))
     return stats
+
+
+def build_agents_pdf(path: Path, sender: dict) -> None:
+    ags = agents(sender)
+    s = [Spacer(1, 1.0 * inch), P(COMPANY, "subtitle"), P("Grok Agent Playbook", "title"), Spacer(1, 6),
+         P("Five Grok agents, one job each, working from one shared Google Sheet.", "subtitle"),
+         Spacer(1, 0.3 * inch)]
+    s.append(table([["#", "Agent", "Job", "Connect", "Turn on"]] +
+                   [[str(a.num), a.name, a.job, a.needs, a.starts] for a in ags],
+                   [0.3 * inch, 1.15 * inch, 2.35 * inch, 1.65 * inch, 1.55 * inch]))
+    s.append(P("How the agents hand off work", "h2"))
+    s.append(P("Agents never message each other. Each one reads and updates the <b>status</b> column of the "
+               "GCGS Leads sheet, and that column is the hand-off. The Email Sender only touches blank rows, the "
+               "Follow-Up Agent only touches \"sent\" rows, and the Reply Watcher moves anyone who answers out of "
+               "both lists. The Weekly Report can stop sending by writing PAUSED in row 1's notes."))
+    s.append(table([["Status", "Meaning", "Who acts"]] + [list(x) for x in STATUSES],
+                   [1.3 * inch, 3.0 * inch, 2.7 * inch]))
+    s.append(P("Rules for you", "h2"))
+    s += bullets([
+        "Replace every <b>[bracketed]</b> item in the prompts before pasting.",
+        "Create each agent in its own new Grok chat so their instructions don't mix.",
+        "<b>You</b> send every reply to an interested lead. The Reply Watcher only drafts.",
+        "To pause everything, type <b>PAUSED</b> at the start of row 1's notes cell. Delete it to resume.",
+        "Changing an agent: edit its prompt in that chat and ask Grok to update the automation.",
+    ])
+    for a in ags:
+        s.append(PageBreak())
+        s.append(P(f"Agent {a.num}: {a.name}", "h1"))
+        s.append(table([["Schedule", a.schedule], ["Connect", a.needs], ["Turn on", a.starts], ["Job", a.job]],
+                       [1.2 * inch, 5.8 * inch], header=False))
+        s.append(P(f"Paste this into a new Grok chat, then add: <i>\"Create an automation named '{a.name}' that "
+                   f"runs this {a.schedule.lower()}.\"</i>", "small"))
+        s.append(Preformatted(a.prompt, ST["monobox"], maxLineLength=100))
+    doc = _doc(path, f"{COMPANY} - Grok Agent Playbook")
+    doc.build(s, onFirstPage=_page_deco("Grok Agent Playbook"), onLaterPages=_page_deco("Grok Agent Playbook"))

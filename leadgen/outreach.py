@@ -1,7 +1,7 @@
 """Builds the outreach file for Grok (one row per company) and the Grok prompt.
 
 The emails do NOT pitch price. They point out 1-2 real things we noticed on the
-company's website, say Gulf Coast Systems has an offer, and ask for a short call.
+company's website, say Gulf Coast Growth Systems has an offer, and ask for a short call.
 """
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 
 from .models import Company
 
-COMPANY = "Gulf Coast Systems"
+COMPANY = "Gulf Coast Growth Systems"
 
 # Reason (from score.py) -> plain-English observation, in priority order.
 OBSERVATIONS = [
@@ -151,7 +151,7 @@ def build_rows(companies: list[Company]) -> list[OutreachRow]:
         ))
     rows.sort(key=lambda r: (r.priority, r.email == "", r.company))
     for i, r in enumerate(rows, 1):
-        r.lead_id = f"GCS-{i:05d}"
+        r.lead_id = f"GCGS-{i:05d}"
     return rows
 
 
@@ -239,7 +239,7 @@ sets up AI systems (24/7 website assistants, quote-request capture, and automate
 for oil & gas and energy companies across the US.
 
 THE LEAD FILE
-I've connected a Google Sheet called "GCS Leads" (in my Google Drive). Each row is one company. \
+I've connected a Google Sheet called "GCGS Leads" (in my Google Drive). Each row is one company. \
 Columns: lead_id, priority, company, contact_name, contact_title, email, backup_email, phone, city, \
 state, website, business_type, site_verified, observation_1, observation_2, all_findings, status, \
 date_sent, follow_up_due, notes.

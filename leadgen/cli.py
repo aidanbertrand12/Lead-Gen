@@ -100,7 +100,7 @@ def cmd_contacts(args) -> None:
 
 
 def cmd_outreach(args) -> None:
-    """Build grok_leads.csv, grok_prompt.txt, the setup guide PDF and the lead book PDF."""
+    """Build grok_leads.csv, call_list.csv, Grok agent prompts, and the printable PDFs."""
     from . import outreach, pdfs
     from .models import load_json
     sender = {"name": args.name, "title": args.title, "phone": args.phone, "address": args.address,
@@ -110,12 +110,14 @@ def cmd_outreach(args) -> None:
     out.mkdir(parents=True, exist_ok=True)
     rows = outreach.build_rows(companies)
     n = outreach.write_grok_csv(rows, out / "grok_leads.csv")
-    outreach.write_prompt(sender, out / "grok_prompt.txt")
+    from . import agents
+    agents.write_agent_files(sender, out / "agents")
+    pdfs.build_agents_pdf(out / "GCGS_Grok_Agents.pdf", sender)
     nc = outreach.write_call_list(companies, out / "call_list.csv")
-    stats = pdfs.build_lead_book(out / "GCS_Lead_Book.pdf", companies, sender)
-    pdfs.build_setup_guide(out / "GCS_Setup_Guide.pdf", stats, sender)
+    stats = pdfs.build_lead_book(out / "GCGS_Lead_Book.pdf", companies, sender)
+    pdfs.build_setup_guide(out / "GCGS_Setup_Guide.pdf", stats, sender)
     print(f"Wrote {out}/grok_leads.csv ({n:,} companies with email), call_list.csv ({nc:,}), "
-          f"grok_prompt.txt, GCS_Lead_Book.pdf, GCS_Setup_Guide.pdf")
+          f"agents/*.txt, GCGS_Grok_Agents.pdf, GCGS_Lead_Book.pdf, GCGS_Setup_Guide.pdf")
     print(stats)
 
 
