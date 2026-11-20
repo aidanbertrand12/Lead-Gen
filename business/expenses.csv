@@ -3,6 +3,8 @@ date,vendor,item,category,amount_usd,billing,status,paid_with,receipt_saved,note
 2026-11-19,X / xAI,Grok subscription (X Premium) - first month,Software & subscriptions,16.65,monthly,active,Chase card,no,First month half off: $16.65 charged 11/19 (Chase alert); renews at $30.00/month from next month. Download receipt from X/Grok account settings.
 2026-12-19,X / xAI,Grok subscription (X Premium) - monthly renewal,Software & subscriptions,30.00,monthly,planned,Chase card,no,Expected renewal date based on 11/19 signup; confirm on statement
 ,Domain registrar (TBD),Outreach domain,Advertising & marketing,15.00,yearly,planned,,no,Estimate $10-20/yr
-,Google,Google Workspace Business Starter (1-2 inboxes),Software & subscriptions,9.00,monthly per inbox,planned,,no,Estimate $8-9 per inbox per month
+,Google,Google Workspace Business Starter (1-2 inboxes),Software & subscriptions,8.40,monthly (Flexible plan),planned,,no,"Business Starter, 1 inbox on outreach domain; $7/mo if switched to annual"
 ,ZeroBounce / NeverBounce (TBD),Email verification,Advertising & marketing,10.00,one-time,planned,,no,Free tier may cover the first list
 ,Google Calendar or Calendly,Booking link,Software & subscriptions,0.00,free,planned,,n/a,Included with Workspace / Calendly free plan
+,Netlify,Website hosting subscription (gulfcoastgrowthsystems.com),Software & subscriptions,,monthly (confirm),active,,no,Already subscribed: fill in start date + amount from Netlify billing
+,Namecheap,Domains: gulfcoastgrowthsystems.com + outreach domain,Advertising & marketing,30.00,yearly,planned,,no,Estimate $25-35 for both
