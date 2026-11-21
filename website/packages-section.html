@@ -1,0 +1,124 @@
+<!-- Gulf Coast Growth Systems: Packages section.
+     Paste inside your page's <body>. Styles are scoped to .gcgs-packages so they won't affect the rest of your site.
+     To SHOW prices: delete the class "gcgs-hide-prices" on the <section> tag below.
+     Replace YOUR_BOOKING_LINK with your Google Calendar booking link. -->
+<section class="gcgs-packages gcgs-hide-prices" id="packages">
+  <style>
+    .gcgs-packages{--ink:#14202b;--muted:#566370;--line:#d9dee4;--bg:#ffffff;--card:#f6f4ef;--accent:#0b3c5d;--accent2:#1b7f8c;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);padding:64px 16px}
+    .gcgs-packages *{box-sizing:border-box}
+    .gcgs-packages .wrap{max-width:1120px;margin:0 auto}
+    .gcgs-packages h2{font-size:clamp(1.7rem,3.5vw,2.4rem);margin:0 0 12px;color:var(--accent);line-height:1.2}
+    .gcgs-packages .lead{font-size:1.1rem;color:var(--muted);max-width:720px;margin:0 0 40px;line-height:1.55}
+    .gcgs-packages .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+    .gcgs-packages .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px 24px;display:flex;flex-direction:column}
+    .gcgs-packages .card.featured{border:2px solid var(--accent2);background:#fff;box-shadow:0 8px 28px rgba(11,60,93,.10)}
+    .gcgs-packages .tag{align-self:flex-start;background:var(--accent2);color:#fff;font-size:.75rem;font-weight:700;letter-spacing:.04em;
+      text-transform:uppercase;padding:4px 10px;border-radius:999px;margin-bottom:12px}
+    .gcgs-packages h3{margin:0 0 4px;font-size:1.4rem}
+    .gcgs-packages .sub{color:var(--muted);margin:0 0 14px;line-height:1.45}
+    .gcgs-packages .price{font-size:1.6rem;font-weight:800;color:var(--accent);margin:0 0 2px}
+    .gcgs-packages .time{color:var(--muted);font-size:.9rem;margin:0 0 18px}
+    .gcgs-packages.gcgs-hide-prices .price{display:none}
+    .gcgs-packages ul{list-style:none;padding:0;margin:0 0 24px;flex:1}
+    .gcgs-packages li{padding:7px 0 7px 26px;position:relative;line-height:1.45;border-top:1px solid var(--line)}
+    .gcgs-packages li:first-child{border-top:0}
+    .gcgs-packages li::before{content:"✓";position:absolute;left:2px;top:7px;color:var(--accent2);font-weight:800}
+    .gcgs-packages .btn{display:block;text-align:center;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;
+      padding:14px 18px;border-radius:10px}
+    .gcgs-packages .btn:hover{opacity:.9}
+    .gcgs-packages .plans{margin-top:48px}
+    .gcgs-packages h4{font-size:1.25rem;margin:0 0 14px;color:var(--accent)}
+    .gcgs-packages .plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+    .gcgs-packages .plan{border:1px solid var(--line);border-radius:12px;padding:18px}
+    .gcgs-packages .plan b{display:block;font-size:1.05rem;margin-bottom:4px}
+    .gcgs-packages .plan .price{font-size:1.1rem}
+    .gcgs-packages .plan p{margin:6px 0 0;color:var(--muted);line-height:1.45}
+    .gcgs-packages .steps{margin-top:48px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;counter-reset:s}
+    .gcgs-packages .step{padding:18px;border-left:3px solid var(--accent2);background:var(--card);border-radius:0 10px 10px 0}
+    .gcgs-packages .step b{display:block;margin-bottom:4px}
+    .gcgs-packages .fine{color:var(--muted);font-size:.9rem;margin-top:22px;line-height:1.5}
+    .gcgs-packages .cta{margin-top:48px;text-align:center;background:var(--accent);color:#fff;border-radius:14px;padding:36px 20px}
+    .gcgs-packages .cta h4{color:#fff}
+    .gcgs-packages .cta p{margin:0 0 18px;opacity:.9}
+    .gcgs-packages .cta .btn{display:inline-block;background:#fff;color:var(--accent)}
+  </style>
+  <div class="wrap">
+    <h2>Websites and AI systems that help you win more work</h2>
+    <p class="lead">Most companies lose work they never hear about: the visitor who couldn't find a quote form, the call that came in after hours, the lead nobody followed up with. We fix that with a modern website, a 24/7 AI assistant, and systems that bring in new customers.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Starter</h3>
+        <p class="sub">Get found and capture every inquiry.</p>
+        <p class="price">Starting at $15,000</p>
+        <p class="time">About 4–6 weeks</p>
+        <ul>
+          <li>Discovery call to learn your services, customers and service area</li>
+          <li>New website, up to 8 pages: mobile-friendly, fast, secure</li>
+          <li>Request-a-quote form on every page</li>
+          <li>24/7 AI assistant that answers questions and captures quote requests, even nights and weekends</li>
+          <li>Customer database (CRM) so every inquiry lands in one place</li>
+          <li>Google Analytics to see who's visiting</li>
+          <li>Training plus 30 days of support after launch</li>
+        </ul>
+        <a class="btn" href="YOUR_BOOKING_LINK">Book a call</a>
+      </div>
+
+      <div class="card featured">
+        <span class="tag">Most popular</span>
+        <h3>Growth</h3>
+        <p class="sub">Our complete system for winning new work. Everything in Starter, plus:</p>
+        <p class="price">Starting at $35,000</p>
+        <p class="time">About 10 weeks</p>
+        <ul>
+          <li>Growth strategy: competitor review, ideal-customer profile, goals</li>
+          <li>Website up to 15 pages: services, safety record &amp; certifications (ISNetworld, Avetta, API, ISO), equipment, locations, careers, SEO for every service and city</li>
+          <li>24/7 AI assistant + quote/bid intake that qualifies inquiries, books calls and alerts you after hours</li>
+          <li>AI lead-generation engine that finds new buyers and runs personalized outreach for you</li>
+          <li>CRM + automation: follow-ups, missed-call text-back, review requests, monthly lead report</li>
+          <li>AI bid/proposal writer and prequalification paperwork help</li>
+          <li>Team training plus 30 days of hands-on support</li>
+        </ul>
+        <a class="btn" href="YOUR_BOOKING_LINK">Book a call</a>
+      </div>
+
+      <div class="card">
+        <h3>Enterprise</h3>
+        <p class="sub">For multi-location and larger operations. Everything in Growth, plus:</p>
+        <p class="price">Starting at $60,000</p>
+        <p class="time">Custom timeline</p>
+        <ul>
+          <li>Multi-location or multi-brand websites</li>
+          <li>Integration with your field ticketing or ERP software</li>
+          <li>Custom AI agents for your operation, such as dispatch or bid analysis</li>
+          <li>90 days of hands-on support after launch</li>
+        </ul>
+        <a class="btn" href="YOUR_BOOKING_LINK">Book a call</a>
+      </div>
+    </div>
+
+    <div class="plans">
+      <h4>Monthly plans (optional, after launch)</h4>
+      <div class="plan-grid">
+        <div class="plan"><b>Maintain</b><span class="price">$1,500/mo</span><p>Hosting, security updates, AI assistant upkeep and tuning, CRM support.</p></div>
+        <div class="plan"><b>Grow</b><span class="price">$3,000/mo</span><p>Everything in Maintain, plus ongoing outreach campaigns, fresh prospect lists and a monthly report.</p></div>
+        <div class="plan"><b>Dominate</b><span class="price">$5,000/mo</span><p>Everything in Grow, plus 4 SEO articles a month, paid ads management and a quarterly strategy review.</p></div>
+      </div>
+      <p class="fine">Third-party costs (software seats, data tools, ad spend) are billed at cost or paid directly by you.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step"><b>1. Intro call</b>15 minutes. We learn how you win work and show you what we found on your website.</div>
+      <div class="step"><b>2. Proposal</b>A clear plan, timeline and price for your business.</div>
+      <div class="step"><b>3. Build</b>We build and test everything. You approve each step.</div>
+      <div class="step"><b>4. Launch &amp; support</b>We train your team and stay with you after launch.</div>
+    </div>
+
+    <div class="cta">
+      <h4>Find out what your website is costing you</h4>
+      <p>Book a free 15-minute call. We'll show you what we found and whether we're a fit.</p>
+      <a class="btn" href="YOUR_BOOKING_LINK">Book your free call</a>
+    </div>
+  </div>
+</section>
